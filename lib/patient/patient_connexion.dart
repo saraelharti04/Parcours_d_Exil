@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../home.dart';
 import 'patient_inscription.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PatientConnexionPage extends StatefulWidget {
   const PatientConnexionPage({Key? key}) : super(key: key);
@@ -18,11 +19,11 @@ class _PatientConnexionPageState extends State<PatientConnexionPage> {
   String _errorMessage = '';
 
   Future<void> _login() async {
-    final String email = _emailController.text.trim();
+    final String username = _emailController.text.trim();
     final String password = _passwordController.text.trim();
     final String type = _isTherapist ? 'thérapeute' : 'patient';
 
-    if (email.isEmpty || password.isEmpty) {
+    if (username.isEmpty || password.isEmpty) {
       setState(() {
         _errorMessage = 'Veuillez remplir tous les champs';
       });
@@ -36,20 +37,22 @@ class _PatientConnexionPageState extends State<PatientConnexionPage> {
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'username': email,
+          'username': username,
           'password': password,
           'type': type,
         }),
       );
-
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final type = data['type'];
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', data['token']);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => Home(
-              isTherapist: data['type'] == 'thérapeute',
-              isPatient: data['type'] == 'patient',
+              isTherapist: type == 'thérapeute',
+              isPatient: type == 'patient',
             ),
           ),
         );
@@ -60,6 +63,7 @@ class _PatientConnexionPageState extends State<PatientConnexionPage> {
         });
       }
     } catch (e) {
+      print('Erreur capturée côté Flutter : $e');
       setState(() {
         _errorMessage = 'Erreur de connexion au serveur';
       });
@@ -75,19 +79,9 @@ class _PatientConnexionPageState extends State<PatientConnexionPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SwitchListTile(
-              title: const Text('Je suis thérapeute'),
-              value: _isTherapist,
-              onChanged: (val) {
-                setState(() {
-                  _isTherapist = val;
-                  _errorMessage = '';
-                });
-              },
-            ),
             TextField(
               controller: _emailController,
-              decoration: const InputDecoration(labelText: 'Email ou identifiant'),
+              decoration: const InputDecoration(labelText: 'Identifiant'),
             ),
             const SizedBox(height: 20),
             TextField(
