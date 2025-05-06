@@ -12,6 +12,7 @@ import 'dart:convert'; // For encoding/decoding
 import 'package:flutter_svg/flutter_svg.dart'; //  flutter_svg package
 import 'dart:async';  // For timer
 import 'favorites.dart';
+import 'package:sembast/sembast_io.dart';
 import 'package:flutter/material.dart';
 import 'package:application_parcours_d_exil/login.dart';
 import 'package:application_parcours_d_exil/therapist/messages_page.dart';
@@ -22,6 +23,13 @@ import 'package:application_parcours_d_exil/patient/patient_home_page.dart';
 import 'package:application_parcours_d_exil/patient/patient_messages_page.dart';
 import 'package:application_parcours_d_exil/patient/patient_account_page.dart';
 import 'package:application_parcours_d_exil/patient/upcoming_events_page.dart';
+import 'package:application_parcours_d_exil/therapist/ajouter_ressource_page.dart';
+import 'package:application_parcours_d_exil/models/menu_item.dart';
+import 'package:application_parcours_d_exil/models/ressource.dart';
+import 'package:path/path.dart' as p;
+import 'package:application_parcours_d_exil/database/ressource_dao.dart';
+import 'package:audio_session/audio_session.dart';
+
 
 // Global List for Favorites
 List<Content> favoriteContents = [];
@@ -61,19 +69,21 @@ class Content {
   final String title;
   final String type; // "video", "audio", "pdf", or "phone"
   final String filePath; // For PDFs or URLs
+  final String? imagePath;
   final String? audioPathFR; //Audio path for French audio played in PDF viewer
   final String? audioPathEN;
   final String? phoneNumber; // For phone numbers
   final String? coverImagePath; // For cover images of audios
   final String? pdfLink; // link at the bottom of the PDF viewer
   final String?
-      pdfLinkText; //link explanation text at the bottom of the PDF viewer
+  pdfLinkText; //link explanation text at the bottom of the PDF viewer
   final String? emailAddress; //  email address
 
   Content({
     required this.title,
     required this.type,
     required this.filePath,
+    this.imagePath,
     this.audioPathFR,
     this.audioPathEN,
     this.phoneNumber,
@@ -88,7 +98,7 @@ class Content {
 class MenuItem {
   final String title;
   final List<MenuItem>? subMenus; // Submenus (can be null)
-  final List<Content>? content; // Contents (Can be null)
+  List<Content>? content; // Contents (Can be null)
 
   MenuItem({required this.title, this.subMenus, this.content});
 }
@@ -108,7 +118,7 @@ final List<MenuItem> mainMenu = [
             title: "Atelier Français",
             type: "pdf",
             filePath:
-                "assets/ressourcesPdE/Parcours de soin/Ateliers/Français/Atelier Français.pdf",
+            "assets/ressourcesPdE/Parcours de soin/Ateliers/Français/Atelier Français.pdf",
             audioPathEN:
                 "assets/ressourcesPdE/Parcours de soin/Ateliers/Français/Audio Atelier Français-EN.m4a",
             audioPathFR:
@@ -1909,6 +1919,7 @@ class Home extends StatefulWidget {
   HomeState createState() => HomeState();
 }
 
+
 class HomeState extends State<Home> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 1;
@@ -1946,7 +1957,8 @@ class HomeState extends State<Home> {
               : widget.isPatient
               ? 'Mode Patient'
               : 'Parcours d\'Exil',
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+          style: const TextStyle(
+              fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
         ),
         leading: IconButton(
           icon: const Icon(Icons.menu, size: 28.0, color: Colors.black),
@@ -1955,6 +1967,17 @@ class HomeState extends State<Home> {
           },
         ),
         actions: [
+          if (widget.isTherapist && _selectedIndex == 1)
+            IconButton(
+              icon: const Icon(Icons.add, size: 28.0, color: Colors.black),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const AjouterRessourcePage()),
+                );
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.logout, size: 28.0, color: Colors.black),
             onPressed: () {
@@ -1985,43 +2008,127 @@ class HomeState extends State<Home> {
             ? const [
           BottomNavigationBarItem(icon: Icon(Icons.message), label: "Messages"),
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Accueil"),
-          BottomNavigationBarItem(icon: Icon(Icons.admin_panel_settings), label: "Admin"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Mon compte"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.admin_panel_settings), label: "Admin"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.person), label: "Mon compte"),
         ]
             : const [
           BottomNavigationBarItem(icon: Icon(Icons.message), label: "Messages"),
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Accueil"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Mon compte"),
-          BottomNavigationBarItem(icon: Icon(Icons.event), label: "Prochainement"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.person), label: "Mon compte"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.event), label: "Prochainement"),
         ],
       )
           : null,
     );
   }
 
-  Widget _buildMainMenu() {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 10.0,
-            mainAxisSpacing: 10.0,
-            childAspectRatio: 1.0,
+
+  @override
+  void initState() {
+    super.initState();
+    loadMergedMenu();
+  }
+  Future<List<MenuItem>> loadMergedMenu() async {
+    final List<MenuItem> mergedMenu = List<MenuItem>.from(mainMenu);
+
+    final dir = await getApplicationDocumentsDirectory();
+    final dbPath = p.join(dir.path, 'parcours_exil.db');
+    final database = await databaseFactoryIo.openDatabase(dbPath);
+    final dao = RessourceDao(database);
+    final ressources = await dao.getAll();
+
+    for (var res in ressources) {
+      final String cat = res.categorie;
+      final String sub = res.sousCategorie;
+
+      final category = mergedMenu.firstWhere(
+            (m) => m.title == cat,
+        orElse: () {
+          final newCat = MenuItem(title: cat, subMenus: []);
+          mergedMenu.add(newCat);
+          return newCat;
+        },
+      );
+
+      final subCategory = category.subMenus!.firstWhere(
+            (s) => s.title == sub,
+        orElse: () {
+          final newSub = MenuItem(title: sub, content: []);
+          category.subMenus!.add(newSub);
+          return newSub;
+        },
+      );
+
+      subCategory.content ??= [];
+
+      // ✅ Vérifie si ce contenu existe déjà (par titre et fichier)
+      final alreadyExists = subCategory.content!.any((c) =>
+      c.title == res.titre && c.filePath == res.fichier);
+
+      if (!alreadyExists) {
+        subCategory.content!.add(
+          Content(
+            title: res.titre,
+            type: res.type,
+            filePath: res.fichier,
+            imagePath: res.image,
+            audioPathFR: res.audioFR,
+            audioPathEN: res.audioEN,
           ),
-          itemCount: mainMenu.length,
-          itemBuilder: (context, index) {
-            final menuItem = mainMenu[index];
-            return _buildAnimatedTile(context, menuItem);
-          },
-        ),
-      ),
+        );
+      }
+    }
+
+    return mergedMenu;
+  }
+
+
+
+
+
+
+  Widget _buildMainMenu() {
+    return FutureBuilder<List<MenuItem>>(
+      future: loadMergedMenu(), // 👈 charge les ressources depuis la base
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text("Erreur: ${snapshot.error}"));
+        }
+
+        // Fusionne le menu statique et le menu dynamique
+        final allMenuItems = snapshot.data ?? [];
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10.0,
+                mainAxisSpacing: 10.0,
+                childAspectRatio: 1.0,
+              ),
+              itemCount: allMenuItems.length,
+              itemBuilder: (context, index) {
+                final menuItem = allMenuItems[index];
+                return _buildAnimatedTile(context, menuItem);
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 }
-
-class TherapistHomePage extends StatelessWidget {
+  class TherapistHomePage extends StatelessWidget {
   const TherapistHomePage({super.key});
 
   @override
@@ -2410,8 +2517,8 @@ class PlayerPage extends StatefulWidget {
 }
 
 class PlayerPageState extends State<PlayerPage> {
-  late final AudioPlayer _audioPlayer;
-  late final VideoPlayerController _videoController;
+  AudioPlayer? _audioPlayer;
+  VideoPlayerController? _videoController;
   bool isPlaying = false;
   Duration _currentPosition = Duration.zero;
   Duration _totalDuration = Duration.zero;
@@ -2419,74 +2526,73 @@ class PlayerPageState extends State<PlayerPage> {
   @override
   void initState() {
     super.initState();
+    _initializePlayer();
+  }
+
+  Future<void> _initializePlayer() async {
+    final isLocal = !widget.content.filePath.startsWith("assets/");
 
     if (widget.content.type == "audio") {
       _audioPlayer = AudioPlayer();
-      _audioPlayer.setAsset(widget.content.filePath).then((_) {
-        _audioPlayer.durationStream.listen((duration) {
-          setState(() {
-            _totalDuration = duration ?? Duration.zero;
-          });
+      final session = await AudioSession.instance;
+      await session.configure(AudioSessionConfiguration.music());
+      if (isLocal) {
+        await _audioPlayer!.setFilePath(widget.content.filePath);
+      } else {
+        await _audioPlayer!.setAsset(widget.content.filePath);
+      }
+      _audioPlayer!.durationStream.listen((duration) {
+        setState(() {
+          _totalDuration = duration ?? Duration.zero;
         });
-        _audioPlayer.positionStream.listen((position) {
-          setState(() {
-            _currentPosition = position;
-          });
+      });
+      _audioPlayer!.positionStream.listen((position) {
+        setState(() {
+          _currentPosition = position;
         });
       });
     } else if (widget.content.type == "video") {
-      _videoController = VideoPlayerController.asset(widget.content.filePath)
-        ..initialize().then((_) {
-          setState(() {
-            _totalDuration = _videoController.value.duration;
-          });
-          _videoController.addListener(() {
-            setState(() {
-              _currentPosition = _videoController.value.position;
-            });
-          });
+      _videoController = isLocal
+          ? VideoPlayerController.file(File(widget.content.filePath))
+          : VideoPlayerController.asset(widget.content.filePath);
+
+      await _videoController!.initialize();
+      setState(() {
+        _totalDuration = _videoController!.value.duration;
+      });
+      _videoController!.addListener(() {
+        setState(() {
+          _currentPosition = _videoController!.value.position;
         });
+      });
     }
   }
 
   @override
   void dispose() {
-    if (widget.content.type == "audio") {
-      _audioPlayer.dispose();
-    } else if (widget.content.type == "video") {
-      _videoController.dispose();
-    }
+    _audioPlayer?.dispose();
+    _videoController?.dispose();
     super.dispose();
   }
 
-  void _seekAudio(Duration position) {
-    _audioPlayer.seek(position);
-  }
-
-  void _seekVideo(Duration position) {
-    _videoController.seekTo(position);
-  }
+  void _seekAudio(Duration position) => _audioPlayer?.seek(position);
+  void _seekVideo(Duration position) => _videoController?.seekTo(position);
 
   void _togglePlayPause() {
     setState(() {
       if (widget.content.type == "audio") {
-        if (isPlaying) {
-          _audioPlayer.pause();
-        } else {
-          _audioPlayer.play();
-        }
+        isPlaying ? _audioPlayer?.pause() : _audioPlayer?.play();
       } else if (widget.content.type == "video") {
-        if (_videoController.value.isPlaying) {
-          _videoController.pause();
+        if (_videoController!.value.isPlaying) {
+          _videoController!.pause();
         } else {
-          _videoController.play();
+          _videoController!.play();
         }
       }
       isPlaying = !isPlaying;
     });
   }
 
-  // Navigate to fullscreen player
   void _goToFullScreen(BuildContext context) {
     Navigator.push(
       context,
@@ -2503,11 +2609,11 @@ class PlayerPageState extends State<PlayerPage> {
         title: Text(widget.content.title),
         actions: widget.content.type == "video"
             ? [
-                IconButton(
-                  icon: const Icon(Icons.fullscreen),
-                  onPressed: () => _goToFullScreen(context),
-                )
-              ]
+          IconButton(
+            icon: const Icon(Icons.fullscreen),
+            onPressed: () => _goToFullScreen(context),
+          )
+        ]
             : null,
       ),
       body: LayoutBuilder(
@@ -2518,28 +2624,25 @@ class PlayerPageState extends State<PlayerPage> {
                 Expanded(
                   child: Center(
                     child: widget.content.coverImagePath != null
-                        ? Image.asset(widget
-                            .content.coverImagePath!) // Custom cover image
+                        ? Image.asset(widget.content.coverImagePath!)
                         : Image.asset(
-                            "assets/icons/audio_placeholder.png", // Placeholder for audio
-                            height: 200,
-                            width: 200,
-                          ),
+                      "assets/icons/audio_placeholder.png",
+                      height: 200,
+                      width: 200,
+                    ),
                   ),
                 ),
               ],
-              if (widget.content.type == "video" &&
-                  _videoController.value.isInitialized) ...[
+              if (widget.content.type == "video" && _videoController != null && _videoController!.value.isInitialized) ...[
                 Flexible(
                   child: AspectRatio(
-                    aspectRatio: _videoController.value.aspectRatio,
-                    child: VideoPlayer(_videoController),
+                    aspectRatio: _videoController!.value.aspectRatio,
+                    child: VideoPlayer(_videoController!),
                   ),
                 ),
               ],
               Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0, vertical: 10.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
                 child: Row(
                   children: [
                     Text(formatDuration(_currentPosition)),
@@ -2566,8 +2669,7 @@ class PlayerPageState extends State<PlayerPage> {
                     icon: const Icon(Icons.replay_10),
                     iconSize: 30,
                     onPressed: () {
-                      final newPosition =
-                          _currentPosition - const Duration(seconds: 10);
+                      final newPosition = _currentPosition - const Duration(seconds: 10);
                       widget.content.type == "audio"
                           ? _seekAudio(newPosition)
                           : _seekVideo(newPosition);
@@ -2582,8 +2684,7 @@ class PlayerPageState extends State<PlayerPage> {
                     icon: const Icon(Icons.forward_10),
                     iconSize: 30,
                     onPressed: () {
-                      final newPosition =
-                          _currentPosition + const Duration(seconds: 10);
+                      final newPosition = _currentPosition + const Duration(seconds: 10);
                       widget.content.type == "audio"
                           ? _seekAudio(newPosition)
                           : _seekVideo(newPosition);
@@ -2633,6 +2734,7 @@ class PlayerPageState extends State<PlayerPage> {
     return "$minutes:$seconds";
   }
 }
+
 
 // FULLSCREEN VIDEO PLAYER
 class FullScreenPlayer extends StatefulWidget {
@@ -2869,29 +2971,36 @@ class PDFViewerPageState extends State<PDFViewerPage> {
   @override
   void initState() {
     super.initState();
-    _loadPdfFromAssets(widget.content.filePath);
+    _loadPdf(widget.content.filePath);
     _checkIfFavorite();
     // Initialize the audio players
     _initializeAudioPlayers();
   }
 
-  Future<void> _loadPdfFromAssets(String assetPath) async {
+  Future<void> _loadPdf(String path) async {
     try {
-      final byteData = await rootBundle.load(assetPath);
-      final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/${assetPath.split('/').last}');
-      await file.writeAsBytes(byteData.buffer.asUint8List());
+      String finalPath;
 
-      if (mounted) {
-        setState(() {
-          _localPath = file.path;
-          _isLoading = false;
-        });
+      if (path.startsWith('assets/')) {
+        // Le fichier vient des assets
+        final byteData = await rootBundle.load(path);
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/${path.split('/').last}');
+        await file.writeAsBytes(byteData.buffer.asUint8List());
+        finalPath = file.path;
+      } else {
+        // Le fichier vient d'un chemin local (file picker)
+        final file = File(path);
+        if (!await file.exists()) throw Exception("Fichier introuvable !");
+        finalPath = file.path;
       }
+
+      setState(() {
+        _localPath = finalPath;
+        _isLoading = false;
+      });
     } catch (e) {
-      if (mounted) {
-        _showErrorDialog(context, "Error loading PDF: $e");
-      }
+      _showErrorDialog(context, "Erreur lors du chargement du PDF: $e");
     }
   }
 

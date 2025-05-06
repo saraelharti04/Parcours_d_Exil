@@ -1,63 +1,46 @@
-
-import 'dart:async';
-import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sembast/sembast.dart';
 import 'package:sembast/sembast_io.dart';
-import 'user_dao.dart';
-import 'therapeute_dao.dart';
-import 'activity_dao.dart';
-import 'notification_dao.dart';
-import 'programme_exercice_dao.dart';
-import 'exercice_dao.dart';
-import 'rappel_exercice_dao.dart';
-import 'ordonnance_dao.dart';
-import 'rappel_ordonnance_dao.dart';
 
+import '../models/patient.dart';
+import '../models/therapeute.dart';
+import '../models/message.dart';
+import '../models/activite.dart';
+import '../models/ressource.dart';
+
+import 'patient_dao.dart';
+import 'therapeute_dao.dart';
+import 'message_dao.dart';
+import 'activite_dao.dart';
+import 'ressource_dao.dart';
 
 class AppDatabase {
-  static final AppDatabase _singleton = AppDatabase._();
-  static AppDatabase get instance => _singleton;
+  static final AppDatabase _singleton = AppDatabase._internal();
+  late Database _db;
 
-  Completer<Database>? _dbOpenCompleter;
-
-  // Instances des DAO
-  late UtilisateurDao utilisateurDao;
-  /*late TherapeuteDao therapeuteDao;
+  late PatientDao patientDao;
+  late TherapeuteDao therapeuteDao;
+  late MessageDao messageDao;
   late ActiviteDao activiteDao;
-  late NotificationDao notificationDao;
-  late ProgrammeExerciceDao programmeExerciceDao;
-  late ExerciceDao exerciceDao;
-  late RappelExerciceDao rappelExerciceDao;
-  late OrdonnanceDao ordonnanceDao;
-  late RappelOrdonnanceDao rappelOrdonnanceDao;*/
+  late RessourceDao ressourceDao;
 
-  AppDatabase._();
+  AppDatabase._internal();
 
-  Future<Database> get database async {
-    if (_dbOpenCompleter == null) {
-      _dbOpenCompleter = Completer();
-      await _openDatabase();
-    }
-    return _dbOpenCompleter!.future;
+  factory AppDatabase() {
+    return _singleton;
   }
 
-  Future<void> _openDatabase() async {
-    final appDocumentDir = await getApplicationDocumentsDirectory();
-    final dbPath = join(appDocumentDir.path, 'demo.db');
-    final database = await databaseFactoryIo.openDatabase(dbPath);
+  Future<void> init() async {
+    final dir = await getApplicationDocumentsDirectory();
+    final dbPath = '${dir.path}/parcours_exil.db';
+    _db = await databaseFactoryIo.openDatabase(dbPath);
 
-    // Initialiser les DAO avec l'instance de la base de données
-    utilisateurDao = UtilisateurDao(database);
-    therapeuteDao = TherapeuteDao(database);
-    activiteDao = ActiviteDao(database);
-    notificationDao = NotificationDao(database);
-    programmeExerciceDao = ProgrammeExerciceDao(database);
-    exerciceDao = ExerciceDao(database);
-    rappelExerciceDao = RappelExerciceDao(database);
-    ordonnanceDao = OrdonnanceDao(database);
-    rappelOrdonnanceDao = RappelOrdonnanceDao(database);
-
-    _dbOpenCompleter!.complete(database);
+    patientDao = PatientDao(_db);
+    therapeuteDao = TherapeuteDao(_db);
+    messageDao = MessageDao(_db);
+    activiteDao = ActiviteDao(_db);
+    ressourceDao = RessourceDao(_db);
   }
+
+  Database get database => _db;
 }

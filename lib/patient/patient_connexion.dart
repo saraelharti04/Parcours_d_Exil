@@ -1,48 +1,67 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:application_parcours_d_exil/home.dart';
-import 'package:application_parcours_d_exil/database/app_database.dart';
-import 'package:application_parcours_d_exil/database/user_dao.dart';
-import 'package:application_parcours_d_exil/models/utilisateur.dart';
+import 'package:http/http.dart' as http;
+import '../home.dart';
+import 'patient_inscription.dart';
 
 class PatientConnexionPage extends StatefulWidget {
-  const PatientConnexionPage({super.key});
+  const PatientConnexionPage({Key? key}) : super(key: key);
 
   @override
   State<PatientConnexionPage> createState() => _PatientConnexionPageState();
 }
 
 class _PatientConnexionPageState extends State<PatientConnexionPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _ippController = TextEditingController();
-  final _passwordController = TextEditingController();
-  String? _error;
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isTherapist = false;
+  String _errorMessage = '';
 
   Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
+    final String email = _emailController.text.trim();
+    final String password = _passwordController.text.trim();
+    final String type = _isTherapist ? 'thérapeute' : 'patient';
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() {
+        _errorMessage = 'Veuillez remplir tous les champs';
+      });
+      return;
+    }
+
+    final url = Uri.parse('http://10.0.2.2:5000/api/login');
 
     try {
-      final db = await $FloorAppDatabase.databaseBuilder('parcours_exil.db').build();
-      final utilisateurDao = UtilisateurDao(db);
-
-      final users = await utilisateurDao.getAll();
-      final matchingUser = users.firstWhere(
-            (user) =>
-        user.numeroIpp == _ippController.text &&
-            user.motDePasse == _passwordController.text,
-        orElse: () => throw Exception("Identifiants invalides"),
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': email,
+          'password': password,
+          'type': type,
+        }),
       );
 
-      if (context.mounted) {
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const Home(isTherapist: false, isPatient: true),
+            builder: (context) => Home(
+              isTherapist: data['type'] == 'thérapeute',
+              isPatient: data['type'] == 'patient',
+            ),
           ),
         );
+      } else {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _errorMessage = data['message'] ?? 'Erreur inconnue';
+        });
       }
     } catch (e) {
       setState(() {
-        _error = "Identifiant ou mot de passe incorrect";
+        _errorMessage = 'Erreur de connexion au serveur';
       });
     }
   }
@@ -50,38 +69,59 @@ class _PatientConnexionPageState extends State<PatientConnexionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Connexion patient")),
+      appBar: AppBar(title: const Text('Connexion')),
       body: Padding(
         padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _ippController,
-                decoration: const InputDecoration(labelText: "Numéro IPP"),
-                validator: (value) =>
-                value == null || value.isEmpty ? "Champ requis" : null,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SwitchListTile(
+              title: const Text('Je suis thérapeute'),
+              value: _isTherapist,
+              onChanged: (val) {
+                setState(() {
+                  _isTherapist = val;
+                  _errorMessage = '';
+                });
+              },
+            ),
+            TextField(
+              controller: _emailController,
+              decoration: const InputDecoration(labelText: 'Email ou identifiant'),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _passwordController,
+              decoration: const InputDecoration(labelText: 'Mot de passe'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: _login,
+              child: const Text('Se connecter'),
+            ),
+            if (_errorMessage.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(_errorMessage, style: const TextStyle(color: Colors.red)),
               ),
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(labelText: "Mot de passe"),
-                obscureText: true,
-                keyboardType: TextInputType.number,
-                validator: (value) =>
-                value == null || value.length != 4 ? "4 chiffres requis" : null,
+            const SizedBox(height: 20),
+            if (!_isTherapist)
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PatientInscriptionPage()),
+                  );
+                },
+                child: const Text("Tu n’as pas encore de compte ? Créer un compte"),
               ),
-              const SizedBox(height: 20),
-              if (_error != null)
-                Text(_error!, style: const TextStyle(color: Colors.red)),
-              ElevatedButton(
-                onPressed: _login,
-                child: const Text("Se connecter"),
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
 }
+
+
+

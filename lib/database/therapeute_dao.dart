@@ -1,42 +1,20 @@
 import 'package:sembast/sembast.dart';
-import 'models/utilisateur.dart';
+import '../models/therapeute.dart';
 
-class UtilisateurDao {
-  static const String STORE_NAME = 'utilisateurs';
-  final _utilisateurStore = intMapStoreFactory.store(STORE_NAME);
+class TherapeuteDao {
+  static const String STORE_NAME = 'therapeutes';
+  final _store = intMapStoreFactory.store(STORE_NAME);
 
-  // Référence à la base de données
   final Database database;
+  TherapeuteDao(this.database);
 
-  UtilisateurDao(this.database);
-
-  // Insérer un utilisateur
-  Future<void> insert(Utilisateur utilisateur) async {
-    await _utilisateurStore.add(database, utilisateur.toMap());
+  Future<void> insert(Therapeute therapeute) async {
+    await _store.add(database, therapeute.toMap());
   }
 
-  // Mettre à jour un utilisateur
-  Future<void> update(Utilisateur utilisateur) async {
-    final finder = Finder(filter: Filter.byKey(utilisateur.id));
-    await _utilisateurStore.update(database, utilisateur.toMap(), finder: finder);
-  }
-
-  // Supprimer un utilisateur
-  Future<void> delete(Utilisateur utilisateur) async {
-    final finder = Finder(filter: Filter.byKey(utilisateur.id));
-    await _utilisateurStore.delete(database, finder: finder);
-  }
-
-  // Récupérer un utilisateur par ID
-  Future<Utilisateur?> getById(String id) async {
-    final finder = Finder(filter: Filter.byKey(id));
-    final recordSnapshot = await _utilisateurStore.findFirst(database, finder: finder);
-    return recordSnapshot != null ? Utilisateur.fromMap(recordSnapshot.value) : null;
-  }
-
-  // Récupérer tous les utilisateurs
-  Future<List<Utilisateur>> getAll() async {
-    final recordSnapshots = await _utilisateurStore.find(database);
-    return recordSnapshots.map((snapshot) => Utilisateur.fromMap(snapshot.value)).toList();
+  Future<Therapeute?> getByNumeroId(String numeroId) async {
+    final finder = Finder(filter: Filter.equals('numero_id', numeroId));
+    final recordSnapshot = await _store.findFirst(database, finder: finder);
+    return recordSnapshot != null ? Therapeute.fromMap(recordSnapshot.value) : null;
   }
 }

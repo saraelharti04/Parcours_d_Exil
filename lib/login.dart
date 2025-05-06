@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'home.dart';
+import 'package:application_parcours_d_exil/home.dart';
+import 'package:application_parcours_d_exil/patient/patient_connexion.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -21,12 +22,10 @@ class LoginPage extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const Home(isPatient: true, isTherapist: false),
-                  ),
+                  MaterialPageRoute(builder: (context) => const PatientConnexionPage()),
                 );
               },
-              child: const Text('Patient'),
+              child: const Text('Se connecter'),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
@@ -46,5 +45,7 @@ class LoginPage extends StatelessWidget {
     );
   }
 }
+
+
 
 

@@ -1,0 +1,26 @@
+# Flutter/Dart/Pub related
+.dart_tool/
+.packages
+.pub-cache/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android related
+android/.gradle/
+android/captures/
+*.iml
+
+# iOS related
+ios/Pods/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/.symlinks/
+ios/Flutter/ephemeral/
+
+# VS Code / IntelliJ
+.vscode/
+.idea/
+*.log
+
+assets/
