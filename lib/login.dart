@@ -9,6 +9,21 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFf4f4f4),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.home),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const Home(isTherapist: false, isPatient: false),
+              ),
+            );
+          },
+        ),
+        title: const Text('Connexion'),
+        centerTitle: true,
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -16,6 +31,7 @@ class LoginPage extends StatelessWidget {
             const Text(
               'Bienvenue sur Parcours d\'Exil',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
             ElevatedButton(
@@ -27,24 +43,13 @@ class LoginPage extends StatelessWidget {
               },
               child: const Text('Se connecter'),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const Home(isTherapist: true, isPatient: false),
-                  ),
-                );
-              },
-              child: const Text('Thérapeute'),
-            ),
           ],
         ),
       ),
     );
   }
 }
+
 
 
 

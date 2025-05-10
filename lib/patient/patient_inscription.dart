@@ -35,7 +35,7 @@ class _PatientInscriptionPageState extends State<PatientInscriptionPage> {
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'email': id,
+          'username': id,
           'password': password,
           'genre': selectedGenre,
         }),
@@ -73,15 +73,14 @@ class _PatientInscriptionPageState extends State<PatientInscriptionPage> {
           children: [
             TextField(
               controller: _idController,
-              decoration: const InputDecoration(labelText: 'Numéro identifiant (email)'),
+              decoration: const InputDecoration(labelText: 'Numéro identifiant'),
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 20),
             TextField(
               controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Mot de passe (4 chiffres)'),
+              decoration: const InputDecoration(labelText: 'Mot de passe'),
               obscureText: true,
-              maxLength: 4,
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 20),
