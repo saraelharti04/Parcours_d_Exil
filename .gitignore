@@ -1,26 +1,44 @@
-# Flutter/Dart/Pub related
+# Flutter / Dart / Pub
 .dart_tool/
 .packages
 .pub-cache/
 build/
 .flutter-plugins
 .flutter-plugins-dependencies
+.melos_tool/
 
-# Android related
+# Android
 android/.gradle/
 android/captures/
 *.iml
+*.apk
+*.jks
+local.properties
 
-# iOS related
+# iOS / macOS
 ios/Pods/
+ios/.symlinks/
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
-ios/.symlinks/
 ios/Flutter/ephemeral/
+macos/Pods/
+macos/.symlinks/
+macos/Flutter/ephemeral/
 
-# VS Code / IntelliJ
+# VS Code / IntelliJ / Xcode
 .vscode/
 .idea/
 *.log
+*.xcworkspace/
+*.xcuserstate
+*.xcodeproj/
 
+# Assets volumineux (non suivis par Git)
 assets/
+!assets/.keep
+
+# Autres fichiers temporaires / système
+*.DS_Store
+*.swp
+*.lock
+*.tmp
