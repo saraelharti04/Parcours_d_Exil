@@ -15,7 +15,7 @@ class _PatientMessagesPageState extends State<PatientMessagesPage> {
   List<dynamic> messages = [];
 
   Future<void> fetchMessages() async {
-    final url = Uri.parse('http://10.0.2.2:5000/api/messages/patient/${widget.patientId}');
+    final url = Uri.parse('http://10.0.2.2:5000/api/messages/received/');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
