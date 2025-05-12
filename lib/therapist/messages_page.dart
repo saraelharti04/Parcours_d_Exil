@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class MessagesPage extends StatefulWidget {
-  final String therapistId; // Identifiant du thérapeute
+  final String therapistId;
 
   const MessagesPage({super.key, required this.therapistId});
 
@@ -15,12 +15,44 @@ class _MessagesPageState extends State<MessagesPage> {
   final TextEditingController _messageController = TextEditingController();
   String? _selectedPatientId;
   final Map<String, List<String>> _messages = {};
+  List<Map<String, String>> _patients = [];
+  bool _loadingPatients = true;
+  String? _error;
 
-  final List<Map<String, String>> _patients = [
-    {'id': '1', 'name': 'Patient 1'},
-    {'id': '2', 'name': 'Patient 2'},
-    {'id': '3', 'name': 'Patient 3'},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    fetchPatients();
+  }
+
+  Future<void> fetchPatients() async {
+    try {
+      final response = await http.get(Uri.parse('http://localhost:5000/users/patients'));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        setState(() {
+          _patients = data
+              .map((patient) => {
+            'id': patient['_id'],
+            'name': patient['name'] ?? 'Sans nom',
+          })
+              .toList();
+          _loadingPatients = false;
+        });
+      } else {
+        setState(() {
+          _error = 'Erreur de récupération des patients.';
+          _loadingPatients = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Erreur de connexion à l\'API : $e';
+        _loadingPatients = false;
+      });
+    }
+  }
 
   Future<void> _sendMessage() async {
     final message = _messageController.text.trim();
@@ -28,16 +60,15 @@ class _MessagesPageState extends State<MessagesPage> {
     if (_selectedPatientId != null && message.isNotEmpty) {
       try {
         final response = await http.post(
-          Uri.parse('http://localhost:3000/messages'),
+          Uri.parse('http://localhost:3000/messages/send'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
-            'senderId': widget.therapistId,
             'receiverId': _selectedPatientId,
             'content': message,
           }),
         );
 
-        if (response.statusCode == 200) {
+        if (response.statusCode == 201) {
           setState(() {
             _messages[_selectedPatientId!] = _messages[_selectedPatientId!] ?? [];
             _messages[_selectedPatientId!]!.add(message);
@@ -67,12 +98,14 @@ class _MessagesPageState extends State<MessagesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Messagerie Thérapeute'),
-      ),
+      appBar: AppBar(title: const Text('Messagerie Thérapeute')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
+        child: _loadingPatients
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? Center(child: Text(_error!))
+            : Column(
           children: [
             DropdownButtonFormField<String>(
               decoration: const InputDecoration(
