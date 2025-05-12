@@ -59,7 +59,7 @@ class _MessagesPageState extends State<MessagesPage> {
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Sélectionne un patient et écris un message.")),
+        const SnackBar(content: Text("Sélectionnez un patient et écrivez un message.")),
       );
     }
   }
