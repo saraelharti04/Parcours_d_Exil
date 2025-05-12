@@ -4,6 +4,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sembast/sembast_io.dart';
 import 'package:path/path.dart' as p;
+import 'package:http/http.dart' as http;
+
 import '../models/ressource.dart';
 import '../database/ressource_dao.dart';
 import '../constants/categories.dart';
@@ -63,11 +65,41 @@ class _AjouterRessourcePageState extends State<AjouterRessourcePage> {
       sousCategorie: selectedSousCategorie!,
     );
 
+    // 1. Ajouter localement
     await _dao.insert(ressource);
+
+    // 2. Envoyer au serveur distant
+    await _envoyerRessourceAuServeur(ressource);
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Ressource ajoutée avec succès')),
     );
     Navigator.pop(context);
+  }
+
+  Future<void> _envoyerRessourceAuServeur(Ressource ressource) async {
+    try {
+      final uri = Uri.parse('http://0.0.0.0:5000/api/ressources/add_ressource');
+
+      final request = http.MultipartRequest('POST', uri)
+        ..fields['titre'] = ressource.titre
+        ..fields['description'] = 'Ajout via Flutter'
+        ..fields['type'] = ressource.type
+        ..fields['categorie'] = ressource.categorie
+        ..fields['sousCategorie'] = ressource.sousCategorie;
+
+      final file = await http.MultipartFile.fromPath('data', ressource.fichier);
+      request.files.add(file);
+
+      final response = await request.send();
+
+      if (response.statusCode != 201) {
+        final respStr = await response.stream.bytesToString();
+        print('Erreur serveur: ${response.statusCode} - $respStr');
+      }
+    } catch (e) {
+      print('Erreur lors de l\'envoi au serveur: $e');
+    }
   }
 
   Widget _buildFilePicker(String label, String? currentPath, Function(String path) onPicked) {
@@ -139,6 +171,3 @@ class _AjouterRessourcePageState extends State<AjouterRessourcePage> {
     );
   }
 }
-
-
-
