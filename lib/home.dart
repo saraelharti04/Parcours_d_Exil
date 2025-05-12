@@ -2039,8 +2039,55 @@ class HomeState extends State<Home> {
     final dbPath = p.join(dir.path, 'parcours_exil.db');
     final database = await databaseFactoryIo.openDatabase(dbPath);
     final dao = RessourceDao(database);
+
+    final localRessources = await dao.getAll();
+    final localIds = localRessources.map((r) => r.id).toSet();
+
+    // 1. Synchroniser depuis le serveur distant
+    try {
+      final response = await http.get(Uri.parse('http://0.0.0.0:5000/ressources/all'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+
+        for (var json in data) {
+          final id = json['_id'];
+
+          if (!localIds.contains(id)) {
+            // Télécharger et sauvegarder le fichier
+            final fileBytes = base64Decode(json['data']);
+            final fileType = json['type'];
+            final titre = json['titre'];
+
+            final extension = fileType.split('/').last;
+            final filename = '$id.$extension';
+            final filePath = p.join(dir.path, filename);
+            final file = File(filePath);
+            await file.writeAsBytes(fileBytes);
+
+            final newRessource = Ressource(
+              id: id,
+              titre: titre,
+              type: fileType,
+              fichier: filePath,
+              categorie: json['categorie'] ?? 'Autre',
+              sousCategorie: json['sousCategorie'] ?? 'Général',
+              audioFR: '',
+              audioEN: '',
+              image: '',
+            );
+
+            await dao.insert(newRessource);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Erreur lors de la synchro distante: $e');
+    }
+
+    // 2. Recharger les ressources locales après synchronisation
     final ressources = await dao.getAll();
 
+    // 3. Fusion avec le menu principal
     for (var res in ressources) {
       final String cat = res.categorie;
       final String sub = res.sousCategorie;
@@ -2065,7 +2112,6 @@ class HomeState extends State<Home> {
 
       subCategory.content ??= [];
 
-      // ✅ Vérifie si ce contenu existe déjà (par titre et fichier)
       final alreadyExists = subCategory.content!.any((c) =>
       c.title == res.titre && c.filePath == res.fichier);
 
@@ -2085,6 +2131,7 @@ class HomeState extends State<Home> {
 
     return mergedMenu;
   }
+
 
 
 
