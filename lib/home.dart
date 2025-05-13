@@ -29,6 +29,7 @@ import 'package:application_parcours_d_exil/models/ressource.dart';
 import 'package:path/path.dart' as p;
 import 'package:application_parcours_d_exil/database/ressource_dao.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:http/http.dart' as http;
 
 
 // Global List for Favorites
