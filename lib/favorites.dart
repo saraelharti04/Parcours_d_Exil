@@ -42,7 +42,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
         preferredSize: const Size.fromHeight(kToolbarHeight + 20), // Height of the AppBar + padding
         child: Padding(
           padding: const EdgeInsets.only(top: 20.0), // Padding above the AppBar content
-          child: AppBar(
+          child: AppBar(automaticallyImplyLeading: false,
             title: const Text('Favoris'),
             actions: [
               IconButton(

@@ -8,7 +8,7 @@ class TherapistHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: false,
         title: const Text(
           "Accueil Thérapeute",
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),

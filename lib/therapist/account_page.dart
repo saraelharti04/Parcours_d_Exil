@@ -81,7 +81,8 @@ class _AccountPageState extends State<AccountPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Mon compte")),
+      appBar: AppBar(automaticallyImplyLeading: false,
+          title: const Text("Mon compte")),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage.isNotEmpty

@@ -1,2 +1,0 @@
-C:/Users/marti/Documents/projet_parcours_dexil/code_application/parcours_d_exil/android/app/.cxx/Debug/0255052d/x86/CMakeFiles/edit_cache.dir
-C:/Users/marti/Documents/projet_parcours_dexil/code_application/parcours_d_exil/android/app/.cxx/Debug/0255052d/x86/CMakeFiles/rebuild_cache.dir
