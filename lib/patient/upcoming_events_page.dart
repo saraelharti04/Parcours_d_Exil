@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UpcomingEventsPage extends StatefulWidget {
   const UpcomingEventsPage({super.key});
@@ -10,74 +11,163 @@ class UpcomingEventsPage extends StatefulWidget {
 }
 
 class _UpcomingEventsPageState extends State<UpcomingEventsPage> {
-  List<Map<String, dynamic>> _events = [];
+  List<dynamic> _activities = [];
+  String? _userGenre;
   bool _isLoading = true;
   String _errorMessage = '';
+
+  final List<Color> _cardColors = [
+    Colors.amber.shade100,
+    Colors.pink.shade100,
+    Colors.purple.shade100,
+    Colors.cyan.shade100,
+  ];
 
   @override
   void initState() {
     super.initState();
-    _fetchEvents();
+    _loadData();
   }
 
-  Future<void> _fetchEvents() async {
-    final url = Uri.parse('http://0.0.0.0:5000/events');
+  Future<void> _loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    if (token == null) {
+      setState(() {
+        _errorMessage = 'Utilisateur non connecté';
+        _isLoading = false;
+      });
+      return;
+    }
+
     try {
-      final response = await http.get(url);
+      final userResponse = await http.get(
+        Uri.parse('http://10.0.2.2:5000/api/me'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        final now = DateTime.now();
-
-        final upcoming = data.where((event) {
-          final date = DateTime.tryParse(event['date'] ?? '');
-          return date != null && date.isAfter(now);
-        }).cast<Map<String, dynamic>>().toList();
-
+      if (userResponse.statusCode != 200) {
         setState(() {
-          _events = upcoming;
+          _errorMessage = 'Erreur lors du chargement du profil';
           _isLoading = false;
         });
-      } else {
-        setState(() {
-          _errorMessage = 'Erreur serveur : ${response.statusCode}';
-          _isLoading = false;
-        });
+        return;
       }
+
+      final userData = jsonDecode(userResponse.body);
+      _userGenre = userData['genre'];
+
+      final activitiesResponse = await http.get(
+        Uri.parse('http://10.0.2.2:5000/api/activities'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      final now = DateTime.now();
+      final allActivities = jsonDecode(activitiesResponse.body) as List;
+
+      final upcomingFiltered = allActivities.where((activity) {
+        final date = DateTime.tryParse(activity['date'] ?? '') ?? DateTime(2000);
+        final genre = activity['genre'] ?? 'Tous';
+        final isFuture = date.isAfter(now);
+        final genreMatches = genre == 'Tous' || genre == _userGenre;
+        return isFuture && genreMatches;
+      }).toList();
+
+      upcomingFiltered.sort((a, b) => DateTime.parse(a['date']).compareTo(DateTime.parse(b['date'])));
+
+      setState(() {
+        _activities = upcomingFiltered;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Erreur de connexion : $e';
+        _errorMessage = 'Erreur de connexion au serveur';
         _isLoading = false;
       });
     }
   }
 
+  void _showActivityDetails(Map<String, dynamic> activity) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(activity['title'] ?? 'Activité'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('📅 Date : ${activity['date']}'),
+            Text('🕒 Heure : ${activity['time']}'),
+            Text('👥 Genre concerné : ${activity['genre']}'),
+            const SizedBox(height: 8),
+            Text('📝 Description :\n${activity['description'] ?? 'Aucune'}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fermer'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('📅 Prochains événements')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _errorMessage.isNotEmpty
-            ? Text(_errorMessage, style: const TextStyle(color: Colors.red))
-            : _events.isEmpty
-            ? const Text('Aucun événement à venir.')
-            : ListView.builder(
-          itemCount: _events.length,
-          itemBuilder: (context, index) {
-            final event = _events[index];
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Text(
-                "- ${event['date']} : ${event['title']}",
-                style: const TextStyle(fontSize: 16),
+      appBar: AppBar(title: const Text("Activités à venir")),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage.isNotEmpty
+          ? Center(child: Text(_errorMessage))
+          : _activities.isEmpty
+          ? const Center(child: Text("Aucune activité à venir"))
+          : ListView.builder(
+        itemCount: _activities.length,
+        padding: const EdgeInsets.all(16),
+        itemBuilder: (context, index) {
+          final activity = _activities[index];
+          final color = _cardColors[index % _cardColors.length];
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: GestureDetector(
+              onTap: () => _showActivityDetails(activity),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        activity['title'],
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios, size: 18),
+                  ],
+                ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
 }
+
