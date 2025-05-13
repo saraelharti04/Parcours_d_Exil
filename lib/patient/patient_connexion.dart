@@ -47,6 +47,7 @@ class _PatientConnexionPageState extends State<PatientConnexionPage> {
         final type = data['type'];
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', data['token']);
+        await prefs.setString('user_id', data['user']['id']); // <-- AJOUT ICI
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(

@@ -1929,20 +1929,30 @@ class HomeState extends State<Home> {
       _selectedIndex = index;
     });
   }
+  Future<List<Widget>> _buildTherapistPages() async {
+    final prefs = await SharedPreferences.getInstance();
+    final therapistId = prefs.getString('user_id') ?? '';
 
-  final List<Widget> _therapistPages = [
-    const MessagesPage(),
-    const TherapistHomePage(),
-    const AdminPage(),
-    const AccountPage(),
-  ];
+    return [
+      MessagesPage(therapistId: therapistId),
+      const TherapistHomePage(),
+      const AdminPage(),
+      const AccountPage(),
+    ];
+  }
 
-  final List<Widget> _patientPages = [
-    const PatientMessagesPage(),
-    const PatientHomePage(),
-    const PatientAccountPage(),
-    const UpcomingEventsPage(),
-  ];
+  Future<List<Widget>> _buildPatientPages() async {
+    final prefs = await SharedPreferences.getInstance();
+    final patientId = prefs.getString('user_id') ?? '';
+
+    return [
+      PatientMessagesPage(patientId: patientId),
+      const PatientHomePage(),
+      const PatientAccountPage(),
+      const UpcomingEventsPage(),
+    ];
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -1992,11 +2002,19 @@ class HomeState extends State<Home> {
         elevation: 5.0,
       ),
       drawer: HamburgerMenu(),
-      body: widget.isTherapist
-          ? _therapistPages[_selectedIndex]
-          : widget.isPatient
-          ? _patientPages[_selectedIndex]
-          : _buildMainMenu(),
+      body: FutureBuilder<List<Widget>>(
+        future: widget.isTherapist
+            ? _buildTherapistPages()
+            : _buildPatientPages(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final pages = snapshot.data!;
+          return pages[_selectedIndex];
+        },
+      ),
       bottomNavigationBar: showBottomNavBar
           ? BottomNavigationBar(
         currentIndex: _selectedIndex,

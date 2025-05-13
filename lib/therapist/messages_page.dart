@@ -1,6 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MessagesPage extends StatefulWidget {
   final String therapistId;
@@ -16,40 +17,51 @@ class _MessagesPageState extends State<MessagesPage> {
   String? _selectedPatientId;
   final Map<String, List<String>> _messages = {};
   List<Map<String, String>> _patients = [];
-  bool _loadingPatients = true;
-  String? _error;
+  bool _isLoadingPatients = true;
 
   @override
   void initState() {
     super.initState();
-    fetchPatients();
+    _fetchPatients();
   }
 
-  Future<void> fetchPatients() async {
+  Future<void> _fetchPatients() async {
     try {
-      final response = await http.get(Uri.parse('http://localhost:5000/users/patients'));
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:5000/api/users'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
+        print('📦 Utilisateurs récupérés : $data'); // 👈 AJOUT ICI
+
+        final patients = data
+            .where((user) => user['type'] == 'patient')
+            .map<Map<String, String>>((user) => {
+          'id': user['_id'],
+          'name': user['username'] ?? user['email'] ?? 'Inconnu',
+        })
+            .toList();
+
+
         setState(() {
-          _patients = data
-              .map((patient) => {
-            'id': patient['_id'],
-            'name': patient['name'] ?? 'Sans nom',
-          })
-              .toList();
-          _loadingPatients = false;
+          _patients = patients;
+          _isLoadingPatients = false;
         });
       } else {
-        setState(() {
-          _error = 'Erreur de récupération des patients.';
-          _loadingPatients = false;
-        });
+        throw Exception('Erreur lors du chargement des patients');
       }
     } catch (e) {
+      print('Erreur lors du chargement des patients : $e');
       setState(() {
-        _error = 'Erreur de connexion à l\'API : $e';
-        _loadingPatients = false;
+        _isLoadingPatients = false;
       });
     }
   }
@@ -60,15 +72,16 @@ class _MessagesPageState extends State<MessagesPage> {
     if (_selectedPatientId != null && message.isNotEmpty) {
       try {
         final response = await http.post(
-          Uri.parse('http://localhost:3000/messages/send'),
+          Uri.parse('http://10.0.2.2:5000/api/messages'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
+            'senderId': widget.therapistId,
             'receiverId': _selectedPatientId,
             'content': message,
           }),
         );
 
-        if (response.statusCode == 201) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
           setState(() {
             _messages[_selectedPatientId!] = _messages[_selectedPatientId!] ?? [];
             _messages[_selectedPatientId!]!.add(message);
@@ -90,7 +103,7 @@ class _MessagesPageState extends State<MessagesPage> {
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Sélectionnez un patient et écrivez un message.")),
+        const SnackBar(content: Text("Sélectionne un patient et écris un message.")),
       );
     }
   }
@@ -99,23 +112,19 @@ class _MessagesPageState extends State<MessagesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Messagerie Thérapeute')),
-      body: Padding(
+      body: _isLoadingPatients
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
         padding: const EdgeInsets.all(16.0),
-        child: _loadingPatients
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-            ? Center(child: Text(_error!))
-            : Column(
+        child: Column(
           children: [
             DropdownButtonFormField<String>(
-              decoration: const InputDecoration(
-                labelText: 'Sélectionner un patient',
-              ),
+              decoration: const InputDecoration(labelText: 'Sélectionner un patient'),
               value: _selectedPatientId,
               items: _patients.map((patient) {
                 return DropdownMenuItem<String>(
                   value: patient['id'],
-                  child: Text(patient['name']!),
+                  child: Text(patient['name'] ?? 'Sans nom'),
                 );
               }).toList(),
               onChanged: (value) {

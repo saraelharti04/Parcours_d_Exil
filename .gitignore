@@ -13,7 +13,8 @@ android/captures/
 *.iml
 *.apk
 *.jks
-local.properties
+android/local.properties
+android/.gradle/buildOutputCleanup/cache.properties
 
 # iOS / macOS
 ios/Pods/
