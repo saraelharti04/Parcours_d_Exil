@@ -29,6 +29,7 @@ import 'package:application_parcours_d_exil/models/ressource.dart';
 import 'package:path/path.dart' as p;
 import 'package:application_parcours_d_exil/database/ressource_dao.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:http/http.dart' as http;
 
 
 // Global List for Favorites
@@ -1929,20 +1930,30 @@ class HomeState extends State<Home> {
       _selectedIndex = index;
     });
   }
+  Future<List<Widget>> _buildTherapistPages() async {
+    final prefs = await SharedPreferences.getInstance();
+    final therapistId = prefs.getString('user_id') ?? '';
 
-  final List<Widget> _therapistPages = [
-    const MessagesPage(),
-    const TherapistHomePage(),
-    const AdminPage(),
-    const AccountPage(),
-  ];
+    return [
+      MessagesPage(therapistId: therapistId),
+      const TherapistHomePage(),
+      const AdminPage(),
+      const AccountPage(),
+    ];
+  }
 
-  final List<Widget> _patientPages = [
-    const PatientMessagesPage(),
-    const PatientHomePage(),
-    const PatientAccountPage(),
-    const UpcomingEventsPage(),
-  ];
+  Future<List<Widget>> _buildPatientPages() async {
+    final prefs = await SharedPreferences.getInstance();
+    final patientId = prefs.getString('user_id') ?? '';
+
+    return [
+      PatientMessagesPage(patientId: patientId),
+      const PatientHomePage(),
+      const PatientAccountPage(),
+      const UpcomingEventsPage(),
+    ];
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -1992,11 +2003,19 @@ class HomeState extends State<Home> {
         elevation: 5.0,
       ),
       drawer: HamburgerMenu(),
-      body: widget.isTherapist
-          ? _therapistPages[_selectedIndex]
-          : widget.isPatient
-          ? _patientPages[_selectedIndex]
-          : _buildMainMenu(),
+      body: FutureBuilder<List<Widget>>(
+        future: widget.isTherapist
+            ? _buildTherapistPages()
+            : _buildPatientPages(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final pages = snapshot.data!;
+          return pages[_selectedIndex];
+        },
+      ),
       bottomNavigationBar: showBottomNavBar
           ? BottomNavigationBar(
         currentIndex: _selectedIndex,
@@ -2039,8 +2058,55 @@ class HomeState extends State<Home> {
     final dbPath = p.join(dir.path, 'parcours_exil.db');
     final database = await databaseFactoryIo.openDatabase(dbPath);
     final dao = RessourceDao(database);
+
+    final localRessources = await dao.getAll();
+    final localIds = localRessources.map((r) => r.id).toSet();
+
+    // 1. Synchroniser depuis le serveur distant
+    try {
+      final response = await http.get(Uri.parse('http://0.0.0.0:5000/ressources/all'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+
+        for (var json in data) {
+          final id = json['_id'];
+
+          if (!localIds.contains(id)) {
+            // Télécharger et sauvegarder le fichier
+            final fileBytes = base64Decode(json['data']);
+            final fileType = json['type'];
+            final titre = json['titre'];
+
+            final extension = fileType.split('/').last;
+            final filename = '$id.$extension';
+            final filePath = p.join(dir.path, filename);
+            final file = File(filePath);
+            await file.writeAsBytes(fileBytes);
+
+            final newRessource = Ressource(
+              id: id,
+              titre: titre,
+              type: fileType,
+              fichier: filePath,
+              categorie: json['categorie'] ?? 'Autre',
+              sousCategorie: json['sousCategorie'] ?? 'Général',
+              audioFR: '',
+              audioEN: '',
+              image: '',
+            );
+
+            await dao.insert(newRessource);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Erreur lors de la synchro distante: $e');
+    }
+
+    // 2. Recharger les ressources locales après synchronisation
     final ressources = await dao.getAll();
 
+    // 3. Fusion avec le menu principal
     for (var res in ressources) {
       final String cat = res.categorie;
       final String sub = res.sousCategorie;
@@ -2065,7 +2131,6 @@ class HomeState extends State<Home> {
 
       subCategory.content ??= [];
 
-      // ✅ Vérifie si ce contenu existe déjà (par titre et fichier)
       final alreadyExists = subCategory.content!.any((c) =>
       c.title == res.titre && c.filePath == res.fichier);
 
@@ -2085,6 +2150,7 @@ class HomeState extends State<Home> {
 
     return mergedMenu;
   }
+
 
 
 
