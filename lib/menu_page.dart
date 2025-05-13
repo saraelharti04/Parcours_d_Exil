@@ -91,7 +91,8 @@ class _MenuPageState extends State<MenuPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+      appBar: AppBar(automaticallyImplyLeading: false,
+          title: Text(widget.title)),
       body: groupedBySubCategory.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -134,7 +135,8 @@ class PDFViewerPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("PDF")),
+      appBar: AppBar(automaticallyImplyLeading: false,
+          title: const Text("PDF")),
       body: PDFView(filePath: path),
     );
   }
@@ -172,7 +174,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Vidéo")),
+      appBar: AppBar(automaticallyImplyLeading: false,
+          title: const Text("Vidéo")),
       body: Center(
         child: _controller.value.isInitialized
             ? AspectRatio(
@@ -213,7 +216,8 @@ class _AudioPlayerPageState extends State<AudioPlayerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Audio")),
+      appBar: AppBar(automaticallyImplyLeading: false,
+          title: const Text("Audio")),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

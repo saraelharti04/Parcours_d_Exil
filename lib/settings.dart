@@ -70,7 +70,7 @@ Van der Hart, O., Brown, P. et Van der Kolk, B. (2021). Chapitre 12. Pierre Jane
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: false,
         title: const Text('Paramètres'),
         toolbarHeight: 80, // Add more height to the app bar
         flexibleSpace: const Padding(
@@ -159,7 +159,8 @@ class SettingsDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: false,
+
         title: Text(title),
       ),
       body: Padding(

@@ -30,7 +30,8 @@ class _PatientHomePageState extends State<PatientHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: HamburgerMenu(),
-      appBar: AppBar(title: const Text('Accueil Patient')),
+      appBar: AppBar(automaticallyImplyLeading: false,
+          title: const Text('Accueil Patient')),
       body: SafeArea(child: _pages[_selectedIndex]),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,

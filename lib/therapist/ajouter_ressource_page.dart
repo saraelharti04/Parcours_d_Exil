@@ -117,7 +117,8 @@ class _AjouterRessourcePageState extends State<AjouterRessourcePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Ajouter une ressource')),
+      appBar: AppBar(automaticallyImplyLeading: false,
+          title: const Text('Ajouter une ressource')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: SingleChildScrollView(

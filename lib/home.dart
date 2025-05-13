@@ -29,6 +29,7 @@ import 'package:application_parcours_d_exil/models/ressource.dart';
 import 'package:path/path.dart' as p;
 import 'package:application_parcours_d_exil/database/ressource_dao.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:http/http.dart' as http;
 
 
 // Global List for Favorites
@@ -1960,7 +1961,7 @@ class HomeState extends State<Home> {
 
     return Scaffold(
       key: _scaffoldKey,
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: false,
         title: Text(
           widget.isTherapist
               ? 'Mode Thérapeute'
@@ -2350,7 +2351,7 @@ return Scaffold(
     preferredSize: const Size.fromHeight(kToolbarHeight + 20), // Height of the AppBar + padding
     child: Padding(
       padding: const EdgeInsets.only(top: 20.0), // Padding above the AppBar content
-      child: AppBar(
+      child: AppBar(automaticallyImplyLeading: false,
         title: Text(title),
         actions: [
           IconButton(
@@ -2670,7 +2671,7 @@ class PlayerPageState extends State<PlayerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: false,
         title: Text(widget.content.title),
         actions: widget.content.type == "video"
             ? [
