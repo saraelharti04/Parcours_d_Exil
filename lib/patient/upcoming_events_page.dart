@@ -117,7 +117,8 @@ class _UpcomingEventsPageState extends State<UpcomingEventsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Activités à venir")),
+      appBar: AppBar(automaticallyImplyLeading: false,
+          title: const Text("Activités à venir")),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage.isNotEmpty
