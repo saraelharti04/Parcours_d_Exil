@@ -70,7 +70,7 @@ class _UpcomingEventsPageState extends State<UpcomingEventsPage> {
         final date = DateTime.tryParse(activity['date'] ?? '') ?? DateTime(2000);
         final genre = activity['genre'] ?? 'Tous';
         final isFuture = date.isAfter(now);
-        final genreMatches = genre == 'Tous' || genre == _userGenre;
+        final genreMatches = _userGenre == 'Autre' || genre == 'Tous' || genre == _userGenre;
         return isFuture && genreMatches;
       }).toList();
 
@@ -99,7 +99,7 @@ class _UpcomingEventsPageState extends State<UpcomingEventsPage> {
           children: [
             Text('📅 Date : ${activity['date']}'),
             Text('🕒 Heure : ${activity['time']}'),
-            Text('👥 Genre concerné : ${activity['genre']}'),
+            Text('👥 Réservé aux : ${activity['genre']}s'),
             const SizedBox(height: 8),
             Text('📝 Description :\n${activity['description'] ?? 'Aucune'}'),
           ],

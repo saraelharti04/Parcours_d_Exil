@@ -41,7 +41,7 @@ class _PatientInscriptionPageState extends State<PatientInscriptionPage> {
         }),
       );
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 200) {
         setState(() {
           _successMessage = 'Compte créé avec succès';
           _errorMessage = '';
