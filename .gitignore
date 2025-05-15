@@ -38,8 +38,13 @@ macos/Flutter/ephemeral/
 assets/
 !assets/.keep
 
+
 # Autres fichiers temporaires / système
 *.DS_Store
 *.swp
 *.lock
 *.tmp
+
+# Fichiers générés automatiquement
+.cxx
+android/app/.cxx/

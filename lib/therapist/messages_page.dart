@@ -24,6 +24,7 @@ class _MessagesPageState extends State<MessagesPage> {
     super.initState();
     _fetchPatients();
   }
+
   void scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -53,6 +54,11 @@ class _MessagesPageState extends State<MessagesPage> {
           'name': user['username'] ?? user['email'] ?? 'Patient',
         })
             .toList();
+
+        // 🔤 Tri alphabétique
+        patients.sort(
+              (a, b) => a['name']!.toLowerCase().compareTo(b['name']!.toLowerCase()),
+        );
 
         setState(() {
           _patients = patients;
@@ -85,8 +91,8 @@ class _MessagesPageState extends State<MessagesPage> {
       setState(() {
         _messages[patientId] = messagesList;
       });
-      scrollToBottom();
 
+      scrollToBottom();
     } else {
       print('❌ Erreur chargement conversation : ${response.body}');
     }
@@ -102,13 +108,13 @@ class _MessagesPageState extends State<MessagesPage> {
         final response = await http.post(
           Uri.parse('http://10.0.2.2:5000/api/messages/send'),
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json; charset=utf-8',
             'Authorization': 'Bearer $token',
           },
-          body: jsonEncode({
+          body: utf8.encode(jsonEncode({
             'receiverId': _selectedPatientId,
             'content': message,
-          }),
+          })),
         );
 
         if (response.statusCode == 201) {

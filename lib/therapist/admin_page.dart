@@ -100,7 +100,8 @@ class _AdminPageState extends State<AdminPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Espace Admin")),
+      appBar: AppBar(automaticallyImplyLeading: false,
+          title: const Text("Espace Admin")),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: ListView(
