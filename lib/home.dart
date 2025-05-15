@@ -1989,19 +1989,16 @@ class HomeState extends State<Home> {
                 );
               },
             ),
-
-          if (!widget.isTherapist && !widget.isPatient)
-            IconButton(
-              icon: const Icon(Icons.login, size: 28.0, color: Colors.black),
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              },
-            ),
+          IconButton(
+            icon: const Icon(Icons.logout, size: 28.0, color: Colors.black),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+              );
+            },
+          ),
         ],
-
         backgroundColor: Colors.white,
         elevation: 5.0,
       ),
