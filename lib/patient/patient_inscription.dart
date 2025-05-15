@@ -91,7 +91,7 @@ class _PatientInscriptionPageState extends State<PatientInscriptionPage> {
               items: const [
                 DropdownMenuItem(value: 'Femme', child: Text('Femme')),
                 DropdownMenuItem(value: 'Homme', child: Text('Homme')),
-                DropdownMenuItem(value: 'Autre', child: Text('Autre')),
+                DropdownMenuItem(value: 'Autre', child: Text('Je préfère me définir autrement')),
               ],
               onChanged: (value) {
                 setState(() {
