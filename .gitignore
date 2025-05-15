@@ -48,3 +48,7 @@ assets/
 # Fichiers générés automatiquement
 .cxx
 android/app/.cxx/
+.flutter-plugins-dependencies
+
+android/.gradle
+build

@@ -1,7 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 
 class MessagesPage extends StatefulWidget {
   final String therapistId;
@@ -14,15 +14,23 @@ class MessagesPage extends StatefulWidget {
 
 class _MessagesPageState extends State<MessagesPage> {
   final TextEditingController _messageController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _searchFocusNode = FocusNode();
+
   String? _selectedPatientId;
   final Map<String, List<String>> _messages = {};
   List<Map<String, String>> _patients = [];
-  final ScrollController _scrollController = ScrollController();
+  List<Map<String, String>> _filteredPatients = [];
 
   @override
   void initState() {
     super.initState();
     _fetchPatients();
+
+    _searchController.addListener(() {
+      _filterPatients(_searchController.text);
+    });
   }
 
   void scrollToBottom() {
@@ -30,6 +38,15 @@ class _MessagesPageState extends State<MessagesPage> {
       if (_scrollController.hasClients) {
         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
+    });
+  }
+
+  void _filterPatients(String query) {
+    setState(() {
+      _filteredPatients = _patients
+          .where((p) =>
+          p['name']!.toLowerCase().contains(query.toLowerCase()))
+          .toList();
     });
   }
 
@@ -55,13 +72,12 @@ class _MessagesPageState extends State<MessagesPage> {
         })
             .toList();
 
-        // 🔤 Tri alphabétique
-        patients.sort(
-              (a, b) => a['name']!.toLowerCase().compareTo(b['name']!.toLowerCase()),
-        );
+        patients.sort((a, b) =>
+            a['name']!.toLowerCase().compareTo(b['name']!.toLowerCase()));
 
         setState(() {
           _patients = patients;
+          _filteredPatients = patients;
         });
       } else {
         print('❌ Erreur récupération patients : ${response.body}');
@@ -122,8 +138,9 @@ class _MessagesPageState extends State<MessagesPage> {
             _messages[_selectedPatientId!] = _messages[_selectedPatientId!] ?? [];
             _messages[_selectedPatientId!]!.add(message);
             _messageController.clear();
-            scrollToBottom();
           });
+
+          scrollToBottom();
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Message envoyé à ${_selectedPatientId!}")),
@@ -149,6 +166,8 @@ class _MessagesPageState extends State<MessagesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final showDropdown = _searchFocusNode.hasFocus || _searchController.text.isNotEmpty;
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -158,26 +177,35 @@ class _MessagesPageState extends State<MessagesPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            DropdownButtonFormField<String>(
+            TextField(
+              controller: _searchController,
+              focusNode: _searchFocusNode,
               decoration: const InputDecoration(
-                labelText: 'Sélectionner un patient',
+                labelText: 'Rechercher un patient',
+                prefixIcon: Icon(Icons.search),
               ),
-              value: _selectedPatientId,
-              items: _patients.map((patient) {
-                return DropdownMenuItem<String>(
-                  value: patient['id'],
-                  child: Text(patient['name']!),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedPatientId = value;
-                });
-                if (value != null) {
-                  _loadConversation(value);
-                }
-              },
             ),
+            if (showDropdown)
+              SizedBox(
+                height: 150,
+                child: ListView.builder(
+                  itemCount: _filteredPatients.length,
+                  itemBuilder: (context, index) {
+                    final patient = _filteredPatients[index];
+                    return ListTile(
+                      title: Text(patient['name']!),
+                      onTap: () {
+                        FocusScope.of(context).unfocus();
+                        setState(() {
+                          _selectedPatientId = patient['id'];
+                          _searchController.text = patient['name']!;
+                        });
+                        _loadConversation(patient['id']!);
+                      },
+                    );
+                  },
+                ),
+              ),
             const SizedBox(height: 16),
             Expanded(
               child: ListView(
@@ -185,7 +213,8 @@ class _MessagesPageState extends State<MessagesPage> {
                 padding: const EdgeInsets.all(8),
                 children: (_messages[_selectedPatientId] ?? []).map((msg) {
                   final now = DateTime.now();
-                  final formattedTime = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+                  final formattedTime =
+                      "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
 
                   return Align(
                     alignment: Alignment.centerRight,
