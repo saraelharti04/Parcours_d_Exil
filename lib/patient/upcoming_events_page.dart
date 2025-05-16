@@ -4,7 +4,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UpcomingEventsPage extends StatefulWidget {
-  const UpcomingEventsPage({super.key});
+  final ValueNotifier<bool> hasNewActivityNotifier;
+
+  const UpcomingEventsPage({super.key, required this.hasNewActivityNotifier});
 
   @override
   State<UpcomingEventsPage> createState() => _UpcomingEventsPageState();
@@ -27,13 +29,28 @@ class _UpcomingEventsPageState extends State<UpcomingEventsPage> {
   void initState() {
     super.initState();
     _loadData();
+    _checkForNewActivity();
+  }
+
+  Future<void> _checkForNewActivity() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasNew = prefs.getBool('has_new_activity') ?? false;
+
+    if (hasNew) {
+      // Marquer comme vu
+      await prefs.setBool('has_new_activity', false);
+    }
+
+    // Mettre à jour la pastille (même si elle est fausse)
+    widget.hasNewActivityNotifier.value = false;
   }
 
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
+    final userId = prefs.getString('user_id');
 
-    if (token == null) {
+    if (token == null || userId == null) {
       setState(() {
         _errorMessage = 'Utilisateur non connecté';
         _isLoading = false;
@@ -42,6 +59,7 @@ class _UpcomingEventsPageState extends State<UpcomingEventsPage> {
     }
 
     try {
+      // 🔹 Récupérer le profil utilisateur pour connaître son genre
       final userResponse = await http.get(
         Uri.parse('http://10.0.2.2:5000/api/me'),
         headers: {'Authorization': 'Bearer $token'},
@@ -56,25 +74,36 @@ class _UpcomingEventsPageState extends State<UpcomingEventsPage> {
       }
 
       final userData = jsonDecode(userResponse.body);
-      _userGenre = userData['genre'];
+      final userGenre = userData['genre'];
+      _userGenre = userGenre;
 
+      // 🔹 Récupérer toutes les activités
       final activitiesResponse = await http.get(
         Uri.parse('http://10.0.2.2:5000/api/activities'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
-      final now = DateTime.now();
       final allActivities = jsonDecode(activitiesResponse.body) as List;
+      final now = DateTime.now();
 
+      // 🔹 Filtrer activités futures correspondant au genre du patient
       final upcomingFiltered = allActivities.where((activity) {
         final date = DateTime.tryParse(activity['date'] ?? '') ?? DateTime(2000);
         final genre = activity['genre'] ?? 'Tous';
         final isFuture = date.isAfter(now);
-        final genreMatches = _userGenre == 'Autre' || genre == 'Tous' || genre == _userGenre;
+        final genreMatches = userGenre == 'Autre' || genre == 'Tous' || genre == userGenre;
         return isFuture && genreMatches;
       }).toList();
 
+      // 🔹 Trier par date croissante
       upcomingFiltered.sort((a, b) => DateTime.parse(a['date']).compareTo(DateTime.parse(b['date'])));
+
+      if (_activities.isNotEmpty && userId != null) {
+        final newestId = _activities.first['_id'];
+        await prefs.setString('last_seen_activity_id_$userId', newestId);
+        widget.hasNewActivityNotifier.value = false;
+      }
+
 
       setState(() {
         _activities = upcomingFiltered;
@@ -87,6 +116,7 @@ class _UpcomingEventsPageState extends State<UpcomingEventsPage> {
       });
     }
   }
+
 
   void _showActivityDetails(Map<String, dynamic> activity) {
     showDialog(
@@ -117,8 +147,7 @@ class _UpcomingEventsPageState extends State<UpcomingEventsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(automaticallyImplyLeading: false,
-          title: const Text("Activités à venir")),
+      appBar: AppBar(automaticallyImplyLeading: false, title: const Text("Activités à venir")),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage.isNotEmpty
@@ -171,4 +200,3 @@ class _UpcomingEventsPageState extends State<UpcomingEventsPage> {
     );
   }
 }
-

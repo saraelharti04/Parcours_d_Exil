@@ -5,9 +5,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class PatientMessagesPage extends StatefulWidget {
   final String patientId;
+  final ValueNotifier<bool> hasNewMessagesNotifier;
 
-  const PatientMessagesPage({super.key, required this.patientId});
-
+  const PatientMessagesPage({
+    super.key,
+    required this.patientId,
+    required this.hasNewMessagesNotifier,
+  });
   @override
   State<PatientMessagesPage> createState() => _PatientMessagesPageState();
 }
@@ -46,6 +50,12 @@ class _PatientMessagesPageState extends State<PatientMessagesPage> {
           ..sort((a, b) => DateTime.parse(a['timestamp'])
               .compareTo(DateTime.parse(b['timestamp'])));
       });
+      final userId = prefs.getString('user_id');
+      if (messages.isNotEmpty && userId != null) {
+        final newestMessageId = messages.last['_id'];
+        await prefs.setString('last_seen_message_id_$userId', newestMessageId);
+        widget.hasNewMessagesNotifier.value = false;
+      }
       scrollToBottom();
     } else {
       print('❌ Erreur ${response.statusCode}: ${response.body}');
