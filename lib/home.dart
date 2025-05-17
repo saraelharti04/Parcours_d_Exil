@@ -1962,7 +1962,7 @@ class HomeState extends State<Home> {
     final prefs = await SharedPreferences.getInstance();
     final patientId = prefs.getString('user_id') ?? '';
     return [
-      PatientMessagesPage(patientId: patientId,
+      PatientMessagesPage(patientId: patientId, 
         hasNewMessagesNotifier: hasNewMessagesNotifier,),
       const PatientHomePage(),
       const PatientAccountPage(),
@@ -2499,7 +2499,11 @@ return Scaffold(
           IconButton(
             icon: const Icon(Icons.home),
             onPressed: () {
-              Navigator.popUntil(context, ModalRoute.withName('/home'));
+              Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                  builder: (_) => const Home(isPatient: false, isTherapist: false),
+              ));
             },
           ),
         ],
