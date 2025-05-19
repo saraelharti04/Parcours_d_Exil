@@ -2074,12 +2074,12 @@ class HomeState extends State<Home> {
             color: Colors.black,
           ),
         ),
-        leading: IconButton(
+        /*leading: IconButton(
           icon: const Icon(Icons.menu, size: 28.0, color: Colors.black),
           onPressed: () {
             _scaffoldKey.currentState?.openDrawer();
           },
-        ),
+        ),*/
         actions: [
           if (widget.isTherapist && _selectedIndex == 1)
             IconButton(
@@ -2544,20 +2544,9 @@ return Scaffold(
         title: Text(title),
         actions: [
           IconButton(
-            icon: const Icon(Icons.home),
-            onPressed: () async {
-              final prefs = await SharedPreferences.getInstance();
-              final userType = prefs.getString('type');
-
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => Home(
-                    isPatient: userType == 'patient',
-                    isTherapist: userType == 'thérapeute',
-                  ),
-                ),
-              );
+            icon: const Icon(Icons.arrow_back), // ou Icons.close, selon ton style
+            onPressed: () {
+              Navigator.pop(context); // revient à la page précédente
             },
           ),
         ],
