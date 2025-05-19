@@ -1,16 +1,23 @@
-# application_parcours_d_exil
+## Installation locale
 
-A new Flutter project.
+### Prérequis à avoir
 
-## Getting Started
+- Flutter installé [`flutter.dev`](https://flutter.dev)
+- Node.js et npm installés [`nodejs.org`](https://nodejs.org)
 
-This project is a starting point for a Flutter application.
+### Étapes pour faire tourner l'application
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+# Cloner le projet
+git clone https://github.com/kinderSchokobon19/parcours_d_exil.git
+cd parcours-exil
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+# Démarrer le backend
+cd lib/API
+npm install
+npm run server
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+# Démarrer l'application mobile
+cd ../..
+flutter pub get
+flutter run

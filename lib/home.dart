@@ -1928,17 +1928,33 @@ class Home extends StatefulWidget {
 
 class HomeState extends State<Home> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final ValueNotifier<bool> hasNewActivityNotifier = ValueNotifier(false);
   int _selectedIndex = 1;
+  final ValueNotifier<bool> hasNewMessagesNotifier = ValueNotifier(false);
+  Timer? _activityCheckTimer;
+
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
+  @override
+  void initState() {
+    super.initState();
+    loadMergedMenu();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkForNewActivities(); // 👈 fonctionne maintenant
+    });
+    _activityCheckTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _checkForNewActivities();
+      _checkForNewMessages();
+    });
+  }
+
   Future<List<Widget>> _buildTherapistPages() async {
     final prefs = await SharedPreferences.getInstance();
     final therapistId = prefs.getString('user_id') ?? '';
-
     return [
       MessagesPage(therapistId: therapistId),
       const TherapistHomePage(),
@@ -1950,23 +1966,103 @@ class HomeState extends State<Home> {
   Future<List<Widget>> _buildPatientPages() async {
     final prefs = await SharedPreferences.getInstance();
     final patientId = prefs.getString('user_id') ?? '';
-
     return [
-      PatientMessagesPage(patientId: patientId),
+      PatientMessagesPage(patientId: patientId, 
+        hasNewMessagesNotifier: hasNewMessagesNotifier,),
       const PatientHomePage(),
       const PatientAccountPage(),
-      const UpcomingEventsPage(),
+      UpcomingEventsPage(hasNewActivityNotifier: hasNewActivityNotifier),
     ];
   }
+
+  Future<void> _checkForNewActivities() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    final userId = prefs.getString('user_id');
+
+    if (token == null || userId == null) return;
+
+    try {
+      final userResponse = await http.get(
+        Uri.parse('http://10.0.2.2:5000/api/me'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      final userData = jsonDecode(userResponse.body);
+      final userGenre = userData['genre'];
+
+      final activitiesResponse = await http.get(
+        Uri.parse('http://10.0.2.2:5000/api/activities'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      final allActivities = jsonDecode(activitiesResponse.body) as List;
+      final now = DateTime.now();
+
+      final upcomingFiltered = allActivities.where((activity) {
+        final date = DateTime.tryParse(activity['date'] ?? '') ?? DateTime(2000);
+        final genre = activity['genre'] ?? 'Tous';
+        final isFuture = date.isAfter(now);
+        final genreMatches =
+            userGenre == 'Autre' || genre == 'Tous' || genre == userGenre;
+        return isFuture && genreMatches;
+      }).toList();
+
+      upcomingFiltered.sort((a, b) => DateTime.parse(a['date']).compareTo(DateTime.parse(b['date'])));
+
+      if (upcomingFiltered.isNotEmpty) {
+        final newestId = upcomingFiltered.first['_id'];
+        final lastSeenId = prefs.getString('last_seen_activity_id_$userId');
+
+        if (newestId != lastSeenId) {
+          hasNewActivityNotifier.value = true;
+        }
+      }
+    } catch (_) {
+      // Silencieux : ne pas afficher de pastille en cas d'erreur
+    }
+  }
+
+  Future<void> _checkForNewMessages() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    final userId = prefs.getString('user_id');
+
+    if (token == null || userId == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:5000/api/messages/received'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        final messages = (json['messages'] as List);
+        if (messages.isEmpty) return;
+
+        final newestMessageId = messages.last['_id']; // ou 'id'
+        final lastSeenId = prefs.getString('last_seen_message_id_$userId');
+
+        if (newestMessageId != lastSeenId) {
+          hasNewMessagesNotifier.value = true;
+        }
+      }
+    } catch (_) {
+      // Ne rien faire
+    }
+  }
+
 
 
   @override
   Widget build(BuildContext context) {
-    bool showBottomNavBar = widget.isTherapist || widget.isPatient;
+    final showBottomNavBar = widget.isTherapist || widget.isPatient;
 
     return Scaffold(
       key: _scaffoldKey,
-      appBar: AppBar(automaticallyImplyLeading: false,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(
           widget.isTherapist
               ? 'Mode Thérapeute'
@@ -1974,7 +2070,10 @@ class HomeState extends State<Home> {
               ? 'Mode Patient'
               : 'Parcours d\'Exil',
           style: const TextStyle(
-              fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.menu, size: 28.0, color: Colors.black),
@@ -2006,7 +2105,6 @@ class HomeState extends State<Home> {
               },
             ),
         ],
-
         backgroundColor: Colors.white,
         elevation: 5.0,
       ),
@@ -2033,43 +2131,71 @@ class HomeState extends State<Home> {
         type: BottomNavigationBarType.fixed,
         items: widget.isTherapist
             ? const [
-          BottomNavigationBarItem(icon: Icon(Icons.message), label: "Messages"),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Accueil"),
           BottomNavigationBarItem(
-              icon: Icon(Icons.admin_panel_settings), label: "Admin"),
+              icon: Icon(Icons.message), label: "Messages"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.home), label: "Accueil"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.admin_panel_settings),
+              label: "Admin"),
           BottomNavigationBarItem(
               icon: Icon(Icons.person), label: "Mon compte"),
         ]
-            : const [
-          BottomNavigationBarItem(icon: Icon(Icons.message), label: "Messages"),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Accueil"),
+            : [
+          BottomNavigationBarItem(
+            icon: ValueListenableBuilder<bool>(
+              valueListenable: hasNewMessagesNotifier,
+              builder: (context, hasNew, _) {
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.message),
+                    if (hasNew)
+                      const Positioned(
+                        right: -2,
+                        top: -2,
+                        child: CircleAvatar(
+                          radius: 5,
+                          backgroundColor: Colors.red,
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+            label: "Messages",
+          ),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.home), label: "Accueil"),
           BottomNavigationBarItem(
               icon: Icon(Icons.person), label: "Mon compte"),
           BottomNavigationBarItem(
-              icon: Icon(Icons.event), label: "Prochainement"),
+            icon: ValueListenableBuilder<bool>(
+              valueListenable: hasNewActivityNotifier,
+              builder: (context, hasNew, _) {
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.event),
+                    if (hasNew)
+                      const Positioned(
+                        right: -2,
+                        top: -2,
+                        child: CircleAvatar(
+                          radius: 5,
+                          backgroundColor: Colors.red,
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+            label: "Prochainement",
+          ),
         ],
       )
           : null,
     );
-  }
-
-
-  @override
-  void initState() {
-    super.initState();
-    loadMergedMenu();
-  }
-
-  Future<List<models.File>> fetchAppwriteFiles() async {
-    try {
-      final result = await appwriteClient.storage.listFiles(
-        bucketId: '6825cfaf00103670137a',
-      );
-      return result.files;
-    } on AppwriteException catch (e) {
-      debugPrint('Erreur Appwrite: ${e.message}');
-      return [];
-    }
   }
 
   Future<List<MenuItem>> loadMergedMenu() async {
@@ -2421,7 +2547,11 @@ return Scaffold(
           IconButton(
             icon: const Icon(Icons.home),
             onPressed: () {
-              Navigator.popUntil(context, ModalRoute.withName('/home'));
+              Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                  builder: (_) => const Home(isPatient: false, isTherapist: false),
+              ));
             },
           ),
         ],

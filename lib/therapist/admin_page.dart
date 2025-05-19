@@ -19,12 +19,55 @@ class _AdminPageState extends State<AdminPage> {
   String? _selectedGenre;
   String _message = '';
   bool _success = false;
+  List<dynamic> _activities = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchActivities();
+  }
 
   void _toggleForm() {
     setState(() {
       _showForm = !_showForm;
       _message = '';
     });
+  }
+
+  Future<void> _fetchActivities() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    if (token == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:5000/api/activities'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final allActivities = jsonDecode(response.body);
+
+        final now = DateTime.now();
+        final upcoming = allActivities.where((activity) {
+          final date = DateTime.tryParse(activity['date'] ?? '');
+          return date != null && date.isAfter(now);
+        }).toList();
+
+        setState(() {
+          _activities = upcoming;
+        });
+      } else {
+        setState(() {
+          _message = 'Erreur lors du chargement des activités.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _message = 'Erreur de connexion.';
+      });
+    }
   }
 
   Future<void> _submitActivity() async {
@@ -42,17 +85,10 @@ class _AdminPageState extends State<AdminPage> {
 
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
+    if (token == null) return;
 
-    if (token == null) {
-      setState(() {
-        _message = 'Utilisateur non connecté';
-        _success = false;
-      });
-      return;
-    }
-
-    final dateStr = _selectedDate!.toIso8601String().split('T')[0]; // yyyy-MM-dd
-    final timeStr = _selectedTime!.format(context); // HH:mm (selon locale)
+    final dateStr = _selectedDate!.toIso8601String().split('T')[0];
+    final timeStr = _selectedTime!.format(context);
 
     try {
       final response = await http.post(
@@ -83,6 +119,7 @@ class _AdminPageState extends State<AdminPage> {
           _selectedTime = null;
           _selectedGenre = null;
         });
+        await _fetchActivities(); // ✅ refresh la liste après ajout
       } else {
         setState(() {
           _message = data['message'] ?? 'Erreur lors de la création';
@@ -95,6 +132,23 @@ class _AdminPageState extends State<AdminPage> {
         _success = false;
       });
     }
+  }
+
+  Widget _buildActivityCard(Map<String, dynamic> activity) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: ListTile(
+        title: Text(activity['title'] ?? 'Sans titre'),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('📅 ${activity['date']} à ${activity['time']}'),
+            Text('👤 Genre : ${activity['genre']}'),
+            Text('📝 ${activity['description'] ?? ''}'),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -185,11 +239,14 @@ class _AdminPageState extends State<AdminPage> {
                 onPressed: _submitActivity,
                 child: const Text('Créer l\'activité'),
               )
-            ]
+            ],
+            const SizedBox(height: 20),
+            const Text('📋 Activités publiées :', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            ..._activities.map((a) => _buildActivityCard(a)).toList(),
           ],
         ),
       ),
     );
   }
 }
-

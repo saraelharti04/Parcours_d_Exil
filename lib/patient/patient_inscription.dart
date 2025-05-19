@@ -41,7 +41,7 @@ class _PatientInscriptionPageState extends State<PatientInscriptionPage> {
         }),
       );
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 200) {
         setState(() {
           _successMessage = 'Compte créé avec succès';
           _errorMessage = '';
@@ -91,7 +91,7 @@ class _PatientInscriptionPageState extends State<PatientInscriptionPage> {
               items: const [
                 DropdownMenuItem(value: 'Femme', child: Text('Femme')),
                 DropdownMenuItem(value: 'Homme', child: Text('Homme')),
-                DropdownMenuItem(value: 'Autre', child: Text('Autre')),
+                DropdownMenuItem(value: 'Autre', child: Text('Je préfère me définir autrement')),
               ],
               onChanged: (value) {
                 setState(() {
