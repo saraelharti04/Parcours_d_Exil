@@ -1939,10 +1939,9 @@ class HomeState extends State<Home> {
     super.initState();
     loadMergedMenu();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkForNewActivities(); // 👈 fonctionne maintenant
-    });
-    _activityCheckTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       _checkForNewActivities();
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForNewMessages();
     });
   }
@@ -2499,12 +2498,19 @@ return Scaffold(
         actions: [
           IconButton(
             icon: const Icon(Icons.home),
-            onPressed: () {
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              final userType = prefs.getString('type');
+
               Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                  builder: (_) => const Home(isPatient: false, isTherapist: false),
-              ));
+                context,
+                MaterialPageRoute(
+                  builder: (_) => Home(
+                    isPatient: userType == 'patient',
+                    isTherapist: userType == 'thérapeute',
+                  ),
+                ),
+              );
             },
           ),
         ],
