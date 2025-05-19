@@ -30,8 +30,13 @@ import 'package:path/path.dart' as p;
 import 'package:application_parcours_d_exil/database/ressource_dao.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:http/http.dart' as http;
+import './appwrite_client.dart';
+import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart' as models;
 
 
+
+final AppwriteClient appwriteClient = AppwriteClient();
 // Global List for Favorites
 List<Content> favoriteContents = [];
 
@@ -2192,35 +2197,73 @@ class HomeState extends State<Home> {
     );
   }
 
-
   Future<List<MenuItem>> loadMergedMenu() async {
     final List<MenuItem> mergedMenu = List<MenuItem>.from(mainMenu);
-
     final dir = await getApplicationDocumentsDirectory();
     final dbPath = p.join(dir.path, 'parcours_exil.db');
     final database = await databaseFactoryIo.openDatabase(dbPath);
     final dao = RessourceDao(database);
 
-    final localRessources = await dao.getAll();
-    final localIds = localRessources.map((r) => r.id).toSet();
+    const appwriteProjectId = '6825cc670032c4d0b58e';
+    const appwriteBucketId = '6825cfaf00103670137a';
 
-    // 1. Synchroniser depuis le serveur distant
     try {
-      final response = await http.get(Uri.parse('http://0.0.0.0:5000/ressources/all'));
+      // 1. Récupérer toutes les ressources déjà présentes en local (ex: par leur ID)
+      final existingResources = await dao.getAll();
+      final existingIds = existingResources.map((r) => r.id).toSet();
+
+      // 2. Requête distante
+      final response = await http.get(Uri.parse('http://10.0.2.2:5000/api/ressources/all'));
+
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
 
         for (var json in data) {
-          final id = json['_id'];
+          final id = json['_id'] ?? '';
+          final titre = json['titre'] ?? '';
+          final cat = json['categorie'] ?? 'Autre';
+          final sub = json['sousCategorie'] ?? 'Général';
+          final fileId = json['fichier'] ?? '';
 
-          if (!localIds.contains(id)) {
-            // Télécharger et sauvegarder le fichier
-            final fileBytes = base64Decode(json['data']);
-            final fileType = json['type'];
-            final titre = json['titre'];
+          if (id.isEmpty || titre.isEmpty || fileId.isEmpty) continue;
 
-            final extension = fileType.split('/').last;
-            final filename = '$id.$extension';
+          // 3. Si la ressource existe déjà, on ne la télécharge pas
+          if (existingIds.contains(id)) {
+            continue;
+          }
+
+          final fileUrl =
+              'https://fra.cloud.appwrite.io/v1/storage/buckets/$appwriteBucketId/files/$fileId/download?project=$appwriteProjectId&mode=admin';
+
+          final fileResponse = await http.get(Uri.parse(fileUrl));
+
+          if (fileResponse.statusCode == 200) {
+            final fileBytes = fileResponse.bodyBytes;
+            final fileType = json['type'] ?? 'application/octet-stream';
+
+            final mimeExtensions = {
+              "mp3": "mp3",
+              "mp4": 'mp4',
+              "pdf": 'pdf',
+              "png": "png",
+              "jpg": "jpg",
+              'audio/mpeg': 'mp3',
+              'audio/mp3': 'mp3',
+              'audio/wav': 'wav',
+              'audio/x-wav': 'wav',
+              'audio/aac': 'aac',
+              'audio/x-m4a': 'm4a',
+              'audio/ogg': 'ogg',
+              'audio/webm': 'webm',
+              'video/mp4': 'mp4',
+              'video/webm': 'webm',
+              'application/pdf': 'pdf',
+              'application/octet-stream': 'bin',
+            };
+
+            final extension = mimeExtensions[fileType] ?? 'bin';
+            final safeTitre = titre.replaceAll(RegExp(r'[^\w\s-]'), '_');
+            final filename = '$safeTitre.$extension';
             final filePath = p.join(dir.path, filename);
             final file = File(filePath);
             await file.writeAsBytes(fileBytes);
@@ -2230,28 +2273,31 @@ class HomeState extends State<Home> {
               titre: titre,
               type: fileType,
               fichier: filePath,
-              categorie: json['categorie'] ?? 'Autre',
-              sousCategorie: json['sousCategorie'] ?? 'Général',
-              audioFR: '',
-              audioEN: '',
-              image: '',
+              categorie: cat,
+              sousCategorie: sub,
+              audioFR: json['audioFR'] ?? '',
+              audioEN: json['audioEN'] ?? '',
+              image: json['image'] ?? '',
             );
-
             await dao.insert(newRessource);
+            existingIds.add(id); // Ajoute à la liste des IDs existants
+          } else {
+            print('❌ Échec téléchargement fichier Appwrite : ${fileResponse.statusCode}');
           }
         }
+      } else {
+        print('❌ Erreur serveur backend : ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Erreur lors de la synchro distante: $e');
+      print('❌ Exception lors de la synchro distante : $e');
     }
 
-    // 2. Recharger les ressources locales après synchronisation
+    // Après synchro, on récupère tout depuis la base locale (mise à jour)
     final ressources = await dao.getAll();
 
-    // 3. Fusion avec le menu principal
     for (var res in ressources) {
-      final String cat = res.categorie;
-      final String sub = res.sousCategorie;
+      final cat = res.categorie;
+      final sub = res.sousCategorie;
 
       final category = mergedMenu.firstWhere(
             (m) => m.title == cat,
@@ -2292,6 +2338,7 @@ class HomeState extends State<Home> {
 
     return mergedMenu;
   }
+
 
 
 

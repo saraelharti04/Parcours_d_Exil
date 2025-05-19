@@ -4,6 +4,8 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+
+
 android {
     namespace = "com.example.application_parcours_d_exil"
     compileSdk = flutter.compileSdkVersion

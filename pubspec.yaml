@@ -23,7 +23,11 @@ dependencies:
   sqflite: ^2.2.8+4
   file_picker: ^8.1.6
   audio_session: ^0.1.6
+  appwrite: ^14.0.0
 
+
+dependency_overrides:
+  flutter_web_auth_2: 4.1.0
 
 dev_dependencies:
   flutter_test:
