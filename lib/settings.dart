@@ -70,8 +70,7 @@ Van der Hart, O., Brown, P. et Van der Kolk, B. (2021). Chapitre 12. Pierre Jane
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(automaticallyImplyLeading: false,
-        title: const Text('Paramètres'),
+      appBar: AppBar(title: const Text('Paramètres'),
         toolbarHeight: 80, // Add more height to the app bar
         flexibleSpace: const Padding(
           padding: EdgeInsets.only(top: 20.0), // Add padding to top of the app bar
@@ -141,7 +140,7 @@ Conformément à la loi Informatique et Libertés du 6 janvier 1978, l’Utilisa
 <b>PROPRIÉTÉ INTELLECTUELLE</b>
 Toute utilisation, reproduction, diffusion, commercialisation ou modification de tout ou partie de l’Application, sans autorisation de l’Éditeur, est strictement interdite. Cela pourrait entraîner des actions et poursuites judiciaires telles que prévues par le Code de la propriété intellectuelle et le Code civil.
 
-<b>Mise à jour :</b> le 10 décembre 2024 à Paris, France
+<b>Mise à jour :</b> le 16 mai 2025 à Paris, France
 ''';
   }
 }
@@ -159,9 +158,7 @@ class SettingsDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(automaticallyImplyLeading: false,
-
-        title: Text(title),
+      appBar: AppBar(title: Text(title),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
