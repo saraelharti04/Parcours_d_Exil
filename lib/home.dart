@@ -2227,8 +2227,6 @@ class HomeState extends State<Home> {
           final fileId = json['fichier'] ?? '';
 
           if (id.isEmpty || titre.isEmpty || fileId.isEmpty) continue;
-
-          // 3. Si la ressource existe déjà, on ne la télécharge pas
           if (existingIds.contains(id)) {
             continue;
           }
