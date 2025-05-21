@@ -1944,10 +1944,9 @@ class HomeState extends State<Home> {
     super.initState();
     loadMergedMenu();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkForNewActivities(); // 👈 fonctionne maintenant
-    });
-    _activityCheckTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       _checkForNewActivities();
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForNewMessages();
     });
   }
@@ -2075,12 +2074,12 @@ class HomeState extends State<Home> {
             color: Colors.black,
           ),
         ),
-        leading: IconButton(
+        /*leading: IconButton(
           icon: const Icon(Icons.menu, size: 28.0, color: Colors.black),
           onPressed: () {
             _scaffoldKey.currentState?.openDrawer();
           },
-        ),
+        ),*/
         actions: [
           if (widget.isTherapist && _selectedIndex == 1)
             IconButton(
@@ -2543,13 +2542,9 @@ return Scaffold(
         title: Text(title),
         actions: [
           IconButton(
-            icon: const Icon(Icons.home),
+            icon: const Icon(Icons.arrow_back), // ou Icons.close, selon ton style
             onPressed: () {
-              Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                  builder: (_) => const Home(isPatient: false, isTherapist: false),
-              ));
+              Navigator.pop(context); // revient à la page précédente
             },
           ),
         ],

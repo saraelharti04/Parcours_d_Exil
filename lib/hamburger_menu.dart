@@ -118,15 +118,7 @@ class _HamburgerMenuState extends State<HamburgerMenu> {
                           Navigator.pop(context);
 
                           if (menuItem["title"] == "Home") {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (context) => const Home(isTherapist: false, isPatient: false)),
-                            );
-                          } else if (menuItem["title"] == "Favoris") {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (context) => const FavoritesPage()),
-                            );
+                            Navigator.pop(context);
                           } else if (menuItem["title"] == "Settings") {
                             Navigator.pushReplacement(
                               context,
