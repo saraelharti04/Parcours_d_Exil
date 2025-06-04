@@ -30,7 +30,7 @@ class _PatientConnexionPageState extends State<PatientConnexionPage> {
       return;
     }
 
-    final url = Uri.parse('http://10.0.2.2:5000/api/login');
+    final url = Uri.parse('https://parcours-d-exil.onrender.com/api/login');
 
     try {
       final response = await http.post(

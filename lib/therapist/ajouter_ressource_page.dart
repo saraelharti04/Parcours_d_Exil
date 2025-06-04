@@ -49,7 +49,7 @@ class _AjouterRessourcePageState extends State<AjouterRessourcePage> {
   }
 
   Future<void> envoyerVersMongoDB(Ressource ressource) async {
-    final url = Uri.parse('http://10.0.2.2:5000/api/ressources/add_ressource');
+    final url = Uri.parse('https://parcours-d-exil.onrender.com/api/ressources/add_ressource');
 
     final body = {
       'id': ressource.id,

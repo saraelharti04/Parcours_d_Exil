@@ -28,7 +28,7 @@ class _PatientInscriptionPageState extends State<PatientInscriptionPage> {
       return;
     }
 
-    final url = Uri.parse('http://10.0.2.2:5000/api/register');
+    final url = Uri.parse('https://parcours-d-exil.onrender.com/api/register');
 
     try {
       final response = await http.post(

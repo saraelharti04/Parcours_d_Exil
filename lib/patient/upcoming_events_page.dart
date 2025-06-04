@@ -61,7 +61,7 @@ class _UpcomingEventsPageState extends State<UpcomingEventsPage> {
     try {
       // 🔹 Récupérer le profil utilisateur pour connaître son genre
       final userResponse = await http.get(
-        Uri.parse('http://10.0.2.2:5000/api/me'),
+        Uri.parse('https://parcours-d-exil.onrender.com/api/me'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -79,7 +79,7 @@ class _UpcomingEventsPageState extends State<UpcomingEventsPage> {
 
       // 🔹 Récupérer toutes les activités
       final activitiesResponse = await http.get(
-        Uri.parse('http://10.0.2.2:5000/api/activities'),
+        Uri.parse('https://parcours-d-exil.onrender.com/api/activities'),
         headers: {'Authorization': 'Bearer $token'},
       );
 

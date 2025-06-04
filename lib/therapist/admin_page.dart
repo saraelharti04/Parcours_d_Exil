@@ -42,7 +42,7 @@ class _AdminPageState extends State<AdminPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:5000/api/activities'),
+        Uri.parse('https://parcours-d-exil.onrender.com/api/activities'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -92,7 +92,7 @@ class _AdminPageState extends State<AdminPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:5000/api/activities'),
+        Uri.parse('https://parcours-d-exil.onrender.com/api/activities'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

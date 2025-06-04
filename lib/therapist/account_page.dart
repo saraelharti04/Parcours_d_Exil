@@ -31,7 +31,7 @@ class _AccountPageState extends State<AccountPage> {
       }
 
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:5000/api/me'),
+        Uri.parse('https://parcours-d-exil.onrender.com/api/me'),
         headers: {
           'Authorization': 'Bearer $token',
         },

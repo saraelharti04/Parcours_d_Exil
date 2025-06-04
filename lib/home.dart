@@ -1983,7 +1983,7 @@ class HomeState extends State<Home> {
 
     try {
       final userResponse = await http.get(
-        Uri.parse('http://10.0.2.2:5000/api/me'),
+        Uri.parse('https://parcours-d-exil.onrender.com/api/me'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -1991,7 +1991,7 @@ class HomeState extends State<Home> {
       final userGenre = userData['genre'];
 
       final activitiesResponse = await http.get(
-        Uri.parse('http://10.0.2.2:5000/api/activities'),
+        Uri.parse('https://parcours-d-exil.onrender.com/api/activities'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -2031,7 +2031,7 @@ class HomeState extends State<Home> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:5000/api/messages/received'),
+        Uri.parse('https://parcours-d-exil.onrender.com/api/messages/received'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -2213,7 +2213,7 @@ class HomeState extends State<Home> {
       final existingIds = existingResources.map((r) => r.id).toSet();
 
       // 2. Requête distante
-      final response = await http.get(Uri.parse('http://10.0.2.2:5000/api/ressources/all'));
+      final response = await http.get(Uri.parse('https://parcours-d-exil.onrender.com/api/ressources/all'));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);

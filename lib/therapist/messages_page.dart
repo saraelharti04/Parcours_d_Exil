@@ -57,7 +57,7 @@ class _MessagesPageState extends State<MessagesPage> {
       final token = prefs.getString('auth_token');
 
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:5000/api/users'),
+        Uri.parse('https://parcours-d-exil.onrender.com/api/users'),
         headers: {
           if (token != null) 'Authorization': 'Bearer $token',
         },
@@ -93,7 +93,7 @@ class _MessagesPageState extends State<MessagesPage> {
     final token = prefs.getString('auth_token');
 
     final response = await http.get(
-      Uri.parse('http://10.0.2.2:5000/api/messages/conversation/$patientId'),
+      Uri.parse('https://parcours-d-exil.onrender.com/api/messages/conversation/$patientId'),
       headers: {
         if (token != null) 'Authorization': 'Bearer $token',
       },
@@ -123,7 +123,7 @@ class _MessagesPageState extends State<MessagesPage> {
     if (_selectedPatientId != null && message.isNotEmpty && token != null) {
       try {
         final response = await http.post(
-          Uri.parse('http://10.0.2.2:5000/api/messages/send'),
+          Uri.parse('https://parcours-d-exil.onrender.com/api/messages/send'),
           headers: {
             'Content-Type': 'application/json; charset=utf-8',
             'Authorization': 'Bearer $token',

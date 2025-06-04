@@ -35,7 +35,7 @@ class _PatientMessagesPageState extends State<PatientMessagesPage> {
       return;
     }
 
-    final url = Uri.parse('http://10.0.2.2:5000/api/messages/received');
+    final url = Uri.parse('https://parcours-d-exil.onrender.com/api/messages/received');
     final response = await http.get(
       url,
       headers: {
