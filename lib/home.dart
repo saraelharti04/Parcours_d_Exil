@@ -1918,8 +1918,11 @@ MenuItem(
 class Home extends StatefulWidget {
   final bool isTherapist;
   final bool isPatient;
+  final bool isLoggedIn;
+  final String? userId;
+  final String? token;
 
-  const Home({super.key, required this.isTherapist, required this.isPatient});
+  const Home({super.key, required this.isTherapist, required this.isPatient, this.userId, this.token, required this.isLoggedIn,});
 
   @override
   HomeState createState() => HomeState();
@@ -1930,6 +1933,7 @@ class HomeState extends State<Home> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ValueNotifier<bool> hasNewActivityNotifier = ValueNotifier(false);
   int _selectedIndex = 1;
+
   final ValueNotifier<bool> hasNewMessagesNotifier = ValueNotifier(false);
   Timer? _activityCheckTimer;
 
@@ -1942,6 +1946,9 @@ class HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
+    print("isLoggedIn: ${widget.isLoggedIn}");
+    print("isTherapist: ${widget.isTherapist}");
+    print("isPatient: ${widget.isPatient}");
     loadMergedMenu();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForNewActivities();
@@ -1966,7 +1973,7 @@ class HomeState extends State<Home> {
     final prefs = await SharedPreferences.getInstance();
     final patientId = prefs.getString('user_id') ?? '';
     return [
-      PatientMessagesPage(patientId: patientId, 
+      PatientMessagesPage(patientId: patientId,
         hasNewMessagesNotifier: hasNewMessagesNotifier,),
       const PatientHomePage(),
       const PatientAccountPage(),
@@ -2245,6 +2252,8 @@ class HomeState extends State<Home> {
               "pdf": 'pdf',
               "png": "png",
               "jpg": "jpg",
+              "image/jpg": "jpg",
+              "image/png": "png",
               'audio/mpeg': 'mp3',
               'audio/mp3': 'mp3',
               'audio/wav': 'wav',
@@ -2264,6 +2273,7 @@ class HomeState extends State<Home> {
             final filename = '$safeTitre.$extension';
             final filePath = p.join(dir.path, filename);
             final file = File(filePath);
+            print(filePath);
             await file.writeAsBytes(fileBytes);
 
             final newRessource = Ressource(

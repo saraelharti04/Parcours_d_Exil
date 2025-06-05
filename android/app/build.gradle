@@ -28,25 +28,24 @@ android {
         versionName = flutter.versionName
     }
 
-    signingConfigs {
-        release {
+    //signingConfigs {
+        //release {
             // Replace with the path to your keystore, keystore password, key alias, and key password.
             // Generate a keystore using `keytool` if you don't already have one.
-            storeFile file("key/release-key.jks") // Adjust the path as needed
-            storePassword "your-store-password"
-            keyAlias "your-key-alias"
-            keyPassword "your-key-password"
-        }
-    }
+            //storeFile file("key/release-key.jks") // Adjust the path as needed
+            //storePassword "your-store-password"
+            //keyAlias "your-key-alias"
+            //keyPassword "your-key-password"
+        //}
+    //}
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
-            // Enable code shrinking, obfuscation, and resource shrinking for release builds.
+            // ❌ désactive la signature, car release n'est pas défini
+            // signingConfig signingConfigs.release
+
             minifyEnabled true
             shrinkResources true
-
-            // Use ProGuard rules to remove unused code and resources.
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
 

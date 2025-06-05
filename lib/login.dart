@@ -16,7 +16,7 @@ class LoginPage extends StatelessWidget {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => const Home(isTherapist: false, isPatient: false),
+                builder: (context) => const Home(isTherapist: false, isPatient: false, isLoggedIn: false),
               ),
             );
           },
