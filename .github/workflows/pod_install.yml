@@ -26,7 +26,7 @@ jobs:
         run: sudo gem install cocoapods
 
       - name: 🏗️ Build iOS to generate Podfile and workspace
-        run: flutter build ios --release
+        run : flutter build ios --simulator
 
       - name: 📂 Install Pods
         run: |
