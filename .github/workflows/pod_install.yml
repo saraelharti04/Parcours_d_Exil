@@ -14,8 +14,7 @@ jobs:
       - name: 📦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.22.1-stable.zip
-
+          flutter-version: https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_3.22.1-stable.zip
       - name: 🔄 Flutter dependencies
         run: flutter pub get
 
