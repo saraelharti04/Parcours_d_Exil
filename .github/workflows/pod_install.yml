@@ -1,7 +1,7 @@
 name: Generate iOS xcworkspace
 
 on:
-  workflow_dispatch:  # permet de déclencher manuellement le workflow
+  workflow_dispatch:
 
 jobs:
   build-ios:
@@ -11,12 +11,17 @@ jobs:
       - name: 📥 Checkout repo
         uses: actions/checkout@v3
 
-      - name: 📦 Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_3.22.1-stable.zip
+      - name: 🔽 Download Flutter SDK 3.22.1
+        run: |
+          curl -O https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.22.1-stable.zip
+          unzip flutter_macos_3.22.1-stable.zip
+
+      - name: 📦 Add Flutter to PATH
+        run: echo "$GITHUB_WORKSPACE/flutter/bin" >> $GITHUB_PATH
+
       - name: 🔄 Flutter dependencies
         run: flutter pub get
+
 
       - name: 💎 Install CocoaPods
         run: sudo gem install cocoapods
