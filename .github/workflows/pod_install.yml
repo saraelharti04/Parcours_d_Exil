@@ -1,0 +1,41 @@
+name: Generate iOS xcworkspace
+
+on:
+  workflow_dispatch:  # permet de déclencher manuellement le workflow
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: 📥 Checkout repo
+        uses: actions/checkout@v3
+
+      - name: 📦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+
+      - name: 🔄 Flutter dependencies
+        run: flutter pub get
+
+      - name: 💎 Install CocoaPods
+        run: sudo gem install cocoapods
+
+      - name: 📂 Install Pods
+        run: |
+          cd ios
+          pod install
+
+      - name: 🔐 Authenticate to push
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📤 Commit generated workspace
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add ios/Runner.xcworkspace
+          git commit -m "Add generated xcworkspace"
+          git push
