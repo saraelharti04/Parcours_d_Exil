@@ -25,10 +25,15 @@ jobs:
       - name: 💎 Install CocoaPods
         run: sudo gem install cocoapods
 
+      - name: 🏗️ Build iOS to generate Podfile and workspace
+        run: flutter build ios --release
+
       - name: 📂 Install Pods
         run: |
           cd ios
           pod install
+          
+
 
       - name: 🔐 Authenticate to push
         uses: ad-m/github-push-action@v0.6.0
