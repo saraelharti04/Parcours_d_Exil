@@ -16,23 +16,6 @@ android/captures/
 android/local.properties
 android/.gradle/buildOutputCleanup/cache.properties
 
-# iOS / macOS
-ios/Pods/
-ios/.symlinks/
-ios/Flutter/Flutter.framework
-ios/Flutter/Flutter.podspec
-ios/Flutter/ephemeral/
-macos/Pods/
-macos/.symlinks/
-macos/Flutter/ephemeral/
-
-# VS Code / IntelliJ / Xcode
-.vscode/
-.idea/
-*.log
-*.xcworkspace/
-*.xcuserstate
-*.xcodeproj/
 
 # Assets volumineux (non suivis par Git)
 assets/
