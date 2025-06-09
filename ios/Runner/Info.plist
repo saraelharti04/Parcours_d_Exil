@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
+<key>NSPhotoLibraryUsageDescription</key>
+<string>Cette application a besoin d'accéder à votre bibliothèque de photos pour permettre à l'utilisateur d'importer ou de visualiser des images.</string>
+
+<key>NSMicrophoneUsageDescription</key>
+<string>Cette application a besoin d'accéder au microphone pour permettre l'enregistrement audio ou la communication vocale.</string>
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
