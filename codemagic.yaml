@@ -1,28 +1,29 @@
 workflows:
-  build-ios:
-    name: Build iOS App
+  ios-build:
+    name: Flutter iOS Release
     environment:
       flutter: stable
       xcode: latest
     scripts:
-      - name: Get Flutter dependencies
+      - name: Get Flutter packages
         script: flutter pub get
+
+      - name: Ensure CocoaPods is installed
+        script: |
+          sudo gem install cocoapods
 
       - name: Install CocoaPods
         script: |
           cd ios
           pod install
+          ls -la
           cd ..
 
-      - name: Build iOS app
+      - name: Verify workspace
+        script: ls -la ios/Runner.xcworkspace || echo "❌ Workspace not found"
+
+      - name: Build iOS
         script: flutter build ios --release --no-codesign
 
     artifacts:
       - build/ios/iphoneos/*.ipa
-      - build/ios/iphoneos/*.dSYM.zip
-      - build/ios/iphoneos/*.app
-
-    publishing:
-      email:
-        recipients:
-          - tonemail@example.com
