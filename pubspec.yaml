@@ -3,7 +3,7 @@ description: "Application en santé mentale pour les personnes bénéficiant d'u
 
 publish_to: 'none'
 
-version: 1.0.2+2
+version: 1.0.3+3
 
 environment:
   sdk: ^3.4.0
