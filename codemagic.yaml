@@ -1,0 +1,28 @@
+workflows:
+  build-ios:
+    name: Build iOS App
+    environment:
+      flutter: stable
+      xcode: latest
+    scripts:
+      - name: Get Flutter dependencies
+        script: flutter pub get
+
+      - name: Install CocoaPods
+        script: |
+          cd ios
+          pod install
+          cd ..
+
+      - name: Build iOS app
+        script: flutter build ios --release --no-codesign
+
+    artifacts:
+      - build/ios/iphoneos/*.ipa
+      - build/ios/iphoneos/*.dSYM.zip
+      - build/ios/iphoneos/*.app
+
+    publishing:
+      email:
+        recipients:
+          - tonemail@example.com

@@ -50,5 +50,10 @@ assets/
 android/app/.cxx/
 .flutter-plugins-dependencies
 
+# .gitignore
+ios/Pods/
+ios/Runner.xcworkspace/
+
+
 android/.gradle
 build
